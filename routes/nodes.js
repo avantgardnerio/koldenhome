@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { asyncHandler, getNode, serializeNode, logEvent } from "../lib/helpers.js";
+import { getDevice, getAllDevices, upsertDevice } from "../lib/db.js";
 
 const router = Router();
 
@@ -18,10 +19,16 @@ export default (manager) => {
    *       200:
    *         description: Array of node info
    */
-  router.get("/", (_req, res) => {
+  router.get("/", asyncHandler(async (_req, res) => {
     const nodes = [...manager.getDriver().controller.nodes.values()].map(serializeNode);
-    res.json(nodes);
-  });
+    const devices = await getAllDevices();
+    const deviceMap = Object.fromEntries(devices.map((d) => [d.node_id, d]));
+    const merged = nodes.map((n) => {
+      const d = deviceMap[n.id];
+      return { ...n, name: d?.name ?? n.name, location: d?.location ?? n.location, notes: d?.notes ?? null };
+    });
+    res.json(merged);
+  }));
 
   /**
    * @openapi
@@ -49,10 +56,33 @@ export default (manager) => {
 
   /**
    * @openapi
-   * /nodes/{id}/name:
+   * /nodes/{id}/metadata:
+   *   get:
+   *     tags: [Nodes]
+   *     summary: Get device metadata from database
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     responses:
+   *       200:
+   *         description: Device metadata
+   */
+  router.get("/:id/metadata", asyncHandler(async (req, res) => {
+    const node = nodeOrBail(req, res);
+    if (!node) return;
+    const device = await getDevice(node.id);
+    res.json(device ?? { node_id: node.id, name: null, location: null, notes: null });
+  }));
+
+  /**
+   * @openapi
+   * /nodes/{id}/metadata:
    *   put:
    *     tags: [Nodes]
-   *     summary: Set node name
+   *     summary: Set device metadata (name, location, notes)
    *     parameters:
    *       - name: id
    *         in: path
@@ -68,48 +98,21 @@ export default (manager) => {
    *             properties:
    *               name:
    *                 type: string
-   *     responses:
-   *       200:
-   *         description: Name updated
-   */
-  router.put("/:id/name", (req, res) => {
-    const node = nodeOrBail(req, res);
-    if (!node) return;
-    node.name = req.body.name;
-    res.json({ ok: true, name: node.name });
-  });
-
-  /**
-   * @openapi
-   * /nodes/{id}/location:
-   *   put:
-   *     tags: [Nodes]
-   *     summary: Set node location
-   *     parameters:
-   *       - name: id
-   *         in: path
-   *         required: true
-   *         schema:
-   *           type: integer
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             properties:
    *               location:
+   *                 type: string
+   *               notes:
    *                 type: string
    *     responses:
    *       200:
-   *         description: Location updated
+   *         description: Metadata updated
    */
-  router.put("/:id/location", (req, res) => {
+  router.put("/:id/metadata", asyncHandler(async (req, res) => {
     const node = nodeOrBail(req, res);
     if (!node) return;
-    node.location = req.body.location;
-    res.json({ ok: true, location: node.location });
-  });
+    await upsertDevice(node.id, req.body);
+    const device = await getDevice(node.id);
+    res.json(device);
+  }));
 
   /**
    * @openapi
