@@ -18,6 +18,7 @@ import nvmRoutes from "./routes/nvm.js";
 import firmwareRoutes from "./routes/firmware.js";
 import nodeRoutes from "./routes/nodes.js";
 import eventRoutes from "./routes/events.js";
+import dashboardRoutes from "./routes/dashboard.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ app.use("/api/controller/nvm", nvmRoutes(manager));
 app.use("/api/controller/firmware-updates", firmwareRoutes(manager));
 app.use("/api/nodes", nodeRoutes(manager));
 app.use("/api/events", eventRoutes());
+app.use("/api/dashboard", dashboardRoutes(manager));
 
 // ─── SPA Catch-All ──────────────────────────────────────────────────────────
 

@@ -26,8 +26,28 @@ export function ValueControl({ value, metadata, onSet }) {
     `;
   }
 
-  // Number with states → dropdown
-  if (states && Object.keys(states).length > 0) {
+  // Number with exactly 2 states → toggle switch (one tap, auto-persists)
+  const stateKeys = states ? Object.keys(states) : [];
+  if (states && stateKeys.length === 2) {
+    const [offKey, onKey] = stateKeys;
+    const isOn = String(pending) === onKey;
+    const toggle = () => {
+      const next = isOn ? Number(offKey) : Number(onKey);
+      setPending(next);
+      onSet(next);
+    };
+    return html`
+      <label class="toggle-switch" onClick=${(e) => { e.preventDefault(); toggle(); }}>
+        <span class="toggle-track ${isOn ? "on" : ""}">
+          <span class="toggle-thumb" />
+        </span>
+        <span class="toggle-label">${states[String(pending)]}</span>
+      </label>
+    `;
+  }
+
+  // Number with 3+ states → dropdown
+  if (states && stateKeys.length > 2) {
     return html`
       <select value=${String(pending ?? "")} onChange=${(e) => setPending(Number(e.target.value))}>
         ${Object.entries(states).map(([k, v]) => html`<option value=${k}>${v}</option>`)}
