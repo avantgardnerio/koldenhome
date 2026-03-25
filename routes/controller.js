@@ -3,7 +3,7 @@ import { asyncHandler } from "../lib/helpers.js";
 
 const router = Router();
 
-export default (driver) => {
+export default (manager) => {
   /**
    * @openapi
    * /controller:
@@ -15,7 +15,7 @@ export default (driver) => {
    *         description: Controller information
    */
   router.get("/", (_req, res) => {
-    const ctrl = driver.controller;
+    const ctrl = manager.getDriver().controller;
     res.json({
       type: ctrl.type,
       homeId: ctrl.homeId?.toString(16),
@@ -69,7 +69,7 @@ export default (driver) => {
    */
   router.post("/inclusion/start", asyncHandler(async (req, res) => {
     const options = req.body || { strategy: 0 };
-    const started = await driver.controller.beginInclusion(options);
+    const started = await manager.getDriver().controller.beginInclusion(options);
     res.json({ started });
   }));
 
@@ -84,7 +84,7 @@ export default (driver) => {
    *         description: Whether inclusion was stopped
    */
   router.post("/inclusion/stop", asyncHandler(async (_req, res) => {
-    const stopped = await driver.controller.stopInclusion();
+    const stopped = await manager.getDriver().controller.stopInclusion();
     res.json({ stopped });
   }));
 
@@ -109,7 +109,7 @@ export default (driver) => {
    */
   router.post("/exclusion/start", asyncHandler(async (req, res) => {
     const options = req.body || { strategy: 0 };
-    const started = await driver.controller.beginExclusion(options);
+    const started = await manager.getDriver().controller.beginExclusion(options);
     res.json({ started });
   }));
 
@@ -124,7 +124,7 @@ export default (driver) => {
    *         description: Whether exclusion was stopped
    */
   router.post("/exclusion/stop", asyncHandler(async (_req, res) => {
-    const stopped = await driver.controller.stopExclusion();
+    const stopped = await manager.getDriver().controller.stopExclusion();
     res.json({ stopped });
   }));
 
@@ -145,7 +145,7 @@ export default (driver) => {
    *         description: Whether the node is marked as failed
    */
   router.get("/nodes/:id/is-failed", asyncHandler(async (req, res) => {
-    const failed = await driver.controller.isFailedNode(Number(req.params.id));
+    const failed = await manager.getDriver().controller.isFailedNode(Number(req.params.id));
     res.json({ failed });
   }));
 
@@ -166,7 +166,7 @@ export default (driver) => {
    *         description: Node removed
    */
   router.post("/nodes/:id/remove-failed", asyncHandler(async (req, res) => {
-    await driver.controller.removeFailedNode(Number(req.params.id));
+    await manager.getDriver().controller.removeFailedNode(Number(req.params.id));
     res.json({ ok: true });
   }));
 
@@ -198,7 +198,7 @@ export default (driver) => {
    *         description: Whether configuration succeeded
    */
   router.post("/nodes/:id/configure-suc", asyncHandler(async (req, res) => {
-    const success = await driver.controller.configureSUC(
+    const success = await manager.getDriver().controller.configureSUC(
       Number(req.params.id),
       req.body.enableSUC,
       req.body.enableSIS,

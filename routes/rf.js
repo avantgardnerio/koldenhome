@@ -3,7 +3,7 @@ import { asyncHandler } from "../lib/helpers.js";
 
 const router = Router();
 
-export default (driver) => {
+export default (manager) => {
   /**
    * @openapi
    * /controller/rf/region:
@@ -15,7 +15,7 @@ export default (driver) => {
    *         description: Current RF region
    */
   router.get("/region", asyncHandler(async (_req, res) => {
-    const region = await driver.controller.getRFRegion();
+    const region = await manager.getDriver().controller.getRFRegion();
     res.json({ region });
   }));
 
@@ -40,7 +40,7 @@ export default (driver) => {
    *         description: Whether region was set
    */
   router.put("/region", asyncHandler(async (req, res) => {
-    const success = await driver.controller.setRFRegion(req.body.region);
+    const success = await manager.getDriver().controller.setRFRegion(req.body.region);
     res.json({ success });
   }));
 
@@ -55,7 +55,7 @@ export default (driver) => {
    *         description: List of supported regions
    */
   router.get("/regions", (_req, res) => {
-    const regions = driver.controller.getSupportedRFRegions();
+    const regions = manager.getDriver().controller.getSupportedRFRegions();
     res.json(regions ?? null);
   });
 
@@ -70,7 +70,7 @@ export default (driver) => {
    *         description: Powerlevel info
    */
   router.get("/powerlevel", asyncHandler(async (_req, res) => {
-    const pl = await driver.controller.getPowerlevel();
+    const pl = await manager.getDriver().controller.getPowerlevel();
     res.json(pl);
   }));
 
@@ -97,7 +97,7 @@ export default (driver) => {
    *         description: Whether powerlevel was set
    */
   router.put("/powerlevel", asyncHandler(async (req, res) => {
-    const success = await driver.controller.setPowerlevel(req.body.powerlevel, req.body.measured0dBm);
+    const success = await manager.getDriver().controller.setPowerlevel(req.body.powerlevel, req.body.measured0dBm);
     res.json({ success });
   }));
 
@@ -112,7 +112,7 @@ export default (driver) => {
    *         description: Max LR powerlevel
    */
   router.get("/long-range/powerlevel", asyncHandler(async (_req, res) => {
-    const limit = await driver.controller.getMaxLongRangePowerlevel();
+    const limit = await manager.getDriver().controller.getMaxLongRangePowerlevel();
     res.json({ maxPowerlevel: limit });
   }));
 
@@ -137,7 +137,7 @@ export default (driver) => {
    *         description: Whether limit was set
    */
   router.put("/long-range/powerlevel", asyncHandler(async (req, res) => {
-    const success = await driver.controller.setMaxLongRangePowerlevel(req.body.limit);
+    const success = await manager.getDriver().controller.setMaxLongRangePowerlevel(req.body.limit);
     res.json({ success });
   }));
 
@@ -152,7 +152,7 @@ export default (driver) => {
    *         description: LR channel info
    */
   router.get("/long-range/channel", asyncHandler(async (_req, res) => {
-    const info = await driver.controller.getLongRangeChannel();
+    const info = await manager.getDriver().controller.getLongRangeChannel();
     res.json(info);
   }));
 
@@ -177,7 +177,7 @@ export default (driver) => {
    *         description: Whether channel was set
    */
   router.put("/long-range/channel", asyncHandler(async (req, res) => {
-    const success = await driver.controller.setLongRangeChannel(req.body.channel);
+    const success = await manager.getDriver().controller.setLongRangeChannel(req.body.channel);
     res.json({ success });
   }));
 
@@ -202,7 +202,7 @@ export default (driver) => {
    *         description: Whether toggle succeeded
    */
   router.post("/toggle", asyncHandler(async (req, res) => {
-    const success = await driver.controller.toggleRF(req.body.enabled);
+    const success = await manager.getDriver().controller.toggleRF(req.body.enabled);
     res.json({ success });
   }));
 
@@ -217,7 +217,7 @@ export default (driver) => {
    *         description: RSSI readings per channel
    */
   router.get("/rssi", asyncHandler(async (_req, res) => {
-    const rssi = await driver.controller.getBackgroundRSSI();
+    const rssi = await manager.getDriver().controller.getBackgroundRSSI();
     res.json(rssi);
   }));
 

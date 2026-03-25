@@ -3,8 +3,8 @@ import { asyncHandler, getNode, serializeNode, logEvent } from "../lib/helpers.j
 
 const router = Router();
 
-export default (driver) => {
-  const nodeOrBail = (req, res) => getNode(driver, req, res);
+export default (manager) => {
+  const nodeOrBail = (req, res) => getNode(manager.getDriver(), req, res);
 
   // ─── List / Info ───────────────────────────────────────────────────────
 
@@ -19,7 +19,7 @@ export default (driver) => {
    *         description: Array of node info
    */
   router.get("/", (_req, res) => {
-    const nodes = [...driver.controller.nodes.values()].map(serializeNode);
+    const nodes = [...manager.getDriver().controller.nodes.values()].map(serializeNode);
     res.json(nodes);
   });
 

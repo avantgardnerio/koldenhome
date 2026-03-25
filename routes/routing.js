@@ -3,7 +3,7 @@ import { asyncHandler } from "../lib/helpers.js";
 
 const router = Router();
 
-export default (driver) => {
+export default (manager) => {
   // ─── Network-wide routes ─────────────────────────────────────────────
 
   /**
@@ -27,7 +27,7 @@ export default (driver) => {
    *         description: Whether route rebuild was started
    */
   router.post("/rebuild/start", (req, res) => {
-    const started = driver.controller.beginRebuildingRoutes(req.body);
+    const started = manager.getDriver().controller.beginRebuildingRoutes(req.body);
     res.json({ started });
   });
 
@@ -42,7 +42,7 @@ export default (driver) => {
    *         description: Whether route rebuild was stopped
    */
   router.post("/rebuild/stop", (_req, res) => {
-    const stopped = driver.controller.stopRebuildingRoutes();
+    const stopped = manager.getDriver().controller.stopRebuildingRoutes();
     res.json({ stopped });
   });
 
@@ -57,7 +57,7 @@ export default (driver) => {
    *         description: Rebuild progress map or null
    */
   router.get("/rebuild/progress", (_req, res) => {
-    const progress = driver.controller.rebuildRoutesProgress;
+    const progress = manager.getDriver().controller.rebuildRoutesProgress;
     if (!progress) return res.json(null);
     const result = {};
     for (const [nodeId, status] of progress) {
@@ -77,7 +77,7 @@ export default (driver) => {
    *         description: Map of node ID to lifeline routes
    */
   router.get("/lifeline", (_req, res) => {
-    const routes = driver.controller.getKnownLifelineRoutes();
+    const routes = manager.getDriver().controller.getKnownLifelineRoutes();
     const result = {};
     for (const [nodeId, route] of routes) {
       result[nodeId] = route;
@@ -104,7 +104,7 @@ export default (driver) => {
    *         description: Whether rebuild succeeded
    */
   router.post("/nodes/:id/rebuild", asyncHandler(async (req, res) => {
-    const success = await driver.controller.rebuildNodeRoutes(Number(req.params.id));
+    const success = await manager.getDriver().controller.rebuildNodeRoutes(Number(req.params.id));
     res.json({ success });
   }));
 
@@ -125,7 +125,7 @@ export default (driver) => {
    *         description: Array of neighbor node IDs
    */
   router.get("/nodes/:id/neighbors", asyncHandler(async (req, res) => {
-    const neighbors = await driver.controller.getNodeNeighbors(Number(req.params.id));
+    const neighbors = await manager.getDriver().controller.getNodeNeighbors(Number(req.params.id));
     res.json([...neighbors]);
   }));
 
@@ -146,7 +146,7 @@ export default (driver) => {
    *         description: Whether discovery succeeded
    */
   router.post("/nodes/:id/neighbors/discover", asyncHandler(async (req, res) => {
-    const success = await driver.controller.discoverNodeNeighbors(Number(req.params.id));
+    const success = await manager.getDriver().controller.discoverNodeNeighbors(Number(req.params.id));
     res.json({ success });
   }));
 
@@ -177,7 +177,7 @@ export default (driver) => {
    *         description: Whether assignment succeeded
    */
   router.post("/nodes/:id/assign-return", asyncHandler(async (req, res) => {
-    const success = await driver.controller.assignReturnRoutes(
+    const success = await manager.getDriver().controller.assignReturnRoutes(
       Number(req.params.id),
       req.body.destinationNodeId,
     );
@@ -201,7 +201,7 @@ export default (driver) => {
    *         description: Whether deletion succeeded
    */
   router.post("/nodes/:id/delete-return", asyncHandler(async (req, res) => {
-    const success = await driver.controller.deleteReturnRoutes(Number(req.params.id));
+    const success = await manager.getDriver().controller.deleteReturnRoutes(Number(req.params.id));
     res.json({ success });
   }));
 
@@ -222,7 +222,7 @@ export default (driver) => {
    *         description: Whether assignment succeeded
    */
   router.post("/nodes/:id/assign-suc-return", asyncHandler(async (req, res) => {
-    const success = await driver.controller.assignSUCReturnRoutes(Number(req.params.id));
+    const success = await manager.getDriver().controller.assignSUCReturnRoutes(Number(req.params.id));
     res.json({ success });
   }));
 
@@ -243,7 +243,7 @@ export default (driver) => {
    *         description: Whether deletion succeeded
    */
   router.post("/nodes/:id/delete-suc-return", asyncHandler(async (req, res) => {
-    const success = await driver.controller.deleteSUCReturnRoutes(Number(req.params.id));
+    const success = await manager.getDriver().controller.deleteSUCReturnRoutes(Number(req.params.id));
     res.json({ success });
   }));
 
@@ -264,7 +264,7 @@ export default (driver) => {
    *         description: Priority route or null
    */
   router.get("/nodes/:id/priority", asyncHandler(async (req, res) => {
-    const route = await driver.controller.getPriorityRoute(Number(req.params.id));
+    const route = await manager.getDriver().controller.getPriorityRoute(Number(req.params.id));
     res.json(route ?? null);
   }));
 
@@ -300,7 +300,7 @@ export default (driver) => {
    */
   router.put("/nodes/:id/priority", asyncHandler(async (req, res) => {
     const { repeaters, routeSpeed } = req.body;
-    const success = await driver.controller.setPriorityRoute(Number(req.params.id), repeaters, routeSpeed);
+    const success = await manager.getDriver().controller.setPriorityRoute(Number(req.params.id), repeaters, routeSpeed);
     res.json({ success });
   }));
 
@@ -321,7 +321,7 @@ export default (driver) => {
    *         description: Whether removal succeeded
    */
   router.delete("/nodes/:id/priority", asyncHandler(async (req, res) => {
-    const success = await driver.controller.removePriorityRoute(Number(req.params.id));
+    const success = await manager.getDriver().controller.removePriorityRoute(Number(req.params.id));
     res.json({ success });
   }));
 

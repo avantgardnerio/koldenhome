@@ -2,7 +2,7 @@ import { Router } from "express";
 
 const router = Router();
 
-export default (driver) => {
+export default (manager) => {
   /**
    * @openapi
    * /controller/provisioning:
@@ -14,7 +14,7 @@ export default (driver) => {
    *         description: List of provisioning entries
    */
   router.get("/", (_req, res) => {
-    res.json(driver.controller.getProvisioningEntries());
+    res.json(manager.getDriver().controller.getProvisioningEntries());
   });
 
   /**
@@ -34,7 +34,7 @@ export default (driver) => {
    *         description: Provisioning entry or null
    */
   router.get("/:dsk", (req, res) => {
-    const entry = driver.controller.getProvisioningEntry(req.params.dsk);
+    const entry = manager.getDriver().controller.getProvisioningEntry(req.params.dsk);
     res.json(entry ?? null);
   });
 
@@ -63,7 +63,7 @@ export default (driver) => {
    *         description: Entry provisioned
    */
   router.post("/", (req, res) => {
-    driver.controller.provisionSmartStartNode(req.body);
+    manager.getDriver().controller.provisionSmartStartNode(req.body);
     res.json({ ok: true });
   });
 
@@ -84,7 +84,7 @@ export default (driver) => {
    *         description: Entry removed
    */
   router.delete("/:dsk", (req, res) => {
-    driver.controller.unprovisionSmartStartNode(req.params.dsk);
+    manager.getDriver().controller.unprovisionSmartStartNode(req.params.dsk);
     res.json({ ok: true });
   });
 

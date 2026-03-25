@@ -3,7 +3,7 @@ import { asyncHandler } from "../lib/helpers.js";
 
 const router = Router();
 
-export default (driver) => {
+export default (manager) => {
   /**
    * @openapi
    * /controller/nodes/{id}/associations:
@@ -22,7 +22,7 @@ export default (driver) => {
    */
   router.get("/:id/associations", (req, res) => {
     const id = Number(req.params.id);
-    const assocMap = driver.controller.getAllAssociations(id);
+    const assocMap = manager.getDriver().controller.getAllAssociations(id);
     const result = {};
     for (const [source, groups] of assocMap) {
       const key = `${source.nodeId}:${source.endpoint ?? 0}`;
@@ -52,7 +52,7 @@ export default (driver) => {
    */
   router.get("/:id/association-groups", (req, res) => {
     const id = Number(req.params.id);
-    const groupsMap = driver.controller.getAllAssociationGroups(id);
+    const groupsMap = manager.getDriver().controller.getAllAssociationGroups(id);
     const result = {};
     for (const [endpointIndex, groups] of groupsMap) {
       result[endpointIndex] = {};
@@ -106,7 +106,7 @@ export default (driver) => {
   router.post("/:id/associations/add", asyncHandler(async (req, res) => {
     const source = { nodeId: Number(req.params.id), endpoint: req.body.endpoint ?? 0 };
     const { group, destinations, force } = req.body;
-    await driver.controller.addAssociations(source, group, destinations, { force });
+    await manager.getDriver().controller.addAssociations(source, group, destinations, { force });
     res.json({ ok: true });
   }));
 
@@ -151,7 +151,7 @@ export default (driver) => {
   router.post("/:id/associations/remove", asyncHandler(async (req, res) => {
     const source = { nodeId: Number(req.params.id), endpoint: req.body.endpoint ?? 0 };
     const { group, destinations } = req.body;
-    await driver.controller.removeAssociations(source, group, destinations);
+    await manager.getDriver().controller.removeAssociations(source, group, destinations);
     res.json({ ok: true });
   }));
 
@@ -172,7 +172,7 @@ export default (driver) => {
    *         description: Node removed from all associations
    */
   router.post("/:id/associations/remove-all", asyncHandler(async (req, res) => {
-    await driver.controller.removeNodeFromAllAssociations(Number(req.params.id));
+    await manager.getDriver().controller.removeNodeFromAllAssociations(Number(req.params.id));
     res.json({ ok: true });
   }));
 

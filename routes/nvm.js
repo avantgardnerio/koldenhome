@@ -3,7 +3,7 @@ import { asyncHandler } from "../lib/helpers.js";
 
 const router = Router();
 
-export default (driver) => {
+export default (manager) => {
   /**
    * @openapi
    * /controller/nvm/backup:
@@ -15,7 +15,7 @@ export default (driver) => {
    *         description: NVM backup data as base64 string
    */
   router.post("/backup", asyncHandler(async (_req, res) => {
-    const data = await driver.controller.backupNVMRaw();
+    const data = await manager.getDriver().controller.backupNVMRaw();
     res.json({ data: Buffer.from(data).toString("base64"), length: data.length });
   }));
 
@@ -42,7 +42,7 @@ export default (driver) => {
    */
   router.post("/restore", asyncHandler(async (req, res) => {
     const data = Buffer.from(req.body.data, "base64");
-    await driver.controller.restoreNVM(data);
+    await manager.getDriver().controller.restoreNVM(data);
     res.json({ ok: true });
   }));
 

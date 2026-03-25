@@ -1,11 +1,12 @@
-import { Driver } from "zwave-js";
 import express from "express";
+import morgan from "morgan";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
-import { wireDriverEvents } from "./lib/events.js";
+import { createDriverManager } from "./lib/driver-manager.js";
+import { runMigrations } from "./lib/db.js";
 
 import driverRoutes from "./routes/driver.js";
 import controllerRoutes from "./routes/controller.js";
@@ -23,19 +24,17 @@ import eventRoutes from "./routes/events.js";
 const PORT = process.env.PORT || 3000;
 const SERIAL_PORT = process.env.SERIAL_PORT || "/dev/ttyUSB0";
 
-// ─── Driver Setup ────────────────────────────────────────────────────────────
+// ─── Driver Manager ─────────────────────────────────────────────────────────
 
-const driver = new Driver(SERIAL_PORT, {
+const manager = createDriverManager({
+  serialPort: SERIAL_PORT,
   logConfig: { enabled: true, level: "warn" },
-});
-
-driver.on("error", (err) => {
-  console.error(`[driver error] ${err.message}`);
 });
 
 // ─── Express + Swagger Setup ─────────────────────────────────────────────────
 
 const app = express();
+app.use(morgan("dev"));
 app.use(express.json());
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -57,15 +56,15 @@ app.get("/openapi.json", (_req, res) => res.json(swaggerSpec));
 
 // ─── Mount Routes ────────────────────────────────────────────────────────────
 
-app.use("/driver", driverRoutes(driver));
-app.use("/controller", controllerRoutes(driver));
-app.use("/controller/provisioning", smartstartRoutes(driver));
-app.use("/controller/nodes", associationRoutes(driver));
-app.use("/controller/routes", routingRoutes(driver));
-app.use("/controller/rf", rfRoutes(driver));
-app.use("/controller/nvm", nvmRoutes(driver));
-app.use("/controller/firmware-updates", firmwareRoutes(driver));
-app.use("/nodes", nodeRoutes(driver));
+app.use("/driver", driverRoutes(manager));
+app.use("/controller", controllerRoutes(manager));
+app.use("/controller/provisioning", smartstartRoutes(manager));
+app.use("/controller/nodes", associationRoutes(manager));
+app.use("/controller/routes", routingRoutes(manager));
+app.use("/controller/rf", rfRoutes(manager));
+app.use("/controller/nvm", nvmRoutes(manager));
+app.use("/controller/firmware-updates", firmwareRoutes(manager));
+app.use("/nodes", nodeRoutes(manager));
 app.use("/events", eventRoutes());
 
 // ─── Error Handler ───────────────────────────────────────────────────────────
@@ -78,9 +77,10 @@ app.use((err, _req, res, _next) => {
 // ─── Start ───────────────────────────────────────────────────────────────────
 
 const startServer = async () => {
-  wireDriverEvents(driver);
+  await runMigrations();
+  console.log("Database migrations complete");
 
-  await driver.start();
+  await manager.start();
 
   app.listen(PORT, () => {
     console.log(`KoldenHome Z-Wave API listening on http://localhost:${PORT}`);
@@ -98,7 +98,7 @@ startServer().catch((err) => {
 
 const shutdown = async () => {
   console.log("Shutting down...");
-  await driver.destroy();
+  await manager.shutdown();
   process.exit(0);
 };
 

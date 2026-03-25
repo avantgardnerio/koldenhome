@@ -3,7 +3,7 @@ import { asyncHandler } from "../lib/helpers.js";
 
 const router = Router();
 
-export default (driver) => {
+export default (manager) => {
   /**
    * @openapi
    * /driver/status:
@@ -15,6 +15,7 @@ export default (driver) => {
    *         description: Driver status info
    */
   router.get("/status", (_req, res) => {
+    const driver = manager.getDriver();
     res.json({
       ready: driver.ready,
       allNodesReady: driver.allNodesReady,
@@ -33,7 +34,7 @@ export default (driver) => {
    *         description: Current log config
    */
   router.get("/log-config", (_req, res) => {
-    res.json(driver.getLogConfig());
+    res.json(manager.getDriver().getLogConfig());
   });
 
   /**
@@ -59,6 +60,7 @@ export default (driver) => {
    *         description: Log config updated
    */
   router.put("/log-config", (req, res) => {
+    const driver = manager.getDriver();
     driver.updateLogConfig(req.body);
     res.json({ ok: true, config: driver.getLogConfig() });
   });
@@ -74,7 +76,7 @@ export default (driver) => {
    *         description: Soft reset completed
    */
   router.post("/soft-reset", asyncHandler(async (_req, res) => {
-    await driver.softReset();
+    await manager.getDriver().softReset();
     res.json({ ok: true });
   }));
 
@@ -89,7 +91,7 @@ export default (driver) => {
    *         description: Hard reset completed
    */
   router.post("/hard-reset", asyncHandler(async (_req, res) => {
-    await driver.hardReset();
+    await manager.getDriver().hardReset();
     res.json({ ok: true });
   }));
 
@@ -104,7 +106,7 @@ export default (driver) => {
    *         description: Shutdown result
    */
   router.post("/shutdown", asyncHandler(async (_req, res) => {
-    const success = await driver.shutdown();
+    const success = await manager.getDriver().shutdown();
     res.json({ ok: success });
   }));
 
@@ -119,7 +121,7 @@ export default (driver) => {
    *         description: Available update version or null
    */
   router.get("/config-updates/check", asyncHandler(async (_req, res) => {
-    const version = await driver.checkForConfigUpdates();
+    const version = await manager.getDriver().checkForConfigUpdates();
     res.json({ availableVersion: version ?? null });
   }));
 
@@ -134,8 +136,89 @@ export default (driver) => {
    *         description: Whether an update was installed
    */
   router.post("/config-updates/install", asyncHandler(async (_req, res) => {
-    const installed = await driver.installConfigUpdate();
+    const installed = await manager.getDriver().installConfigUpdate();
     res.json({ installed });
+  }));
+
+  // ─── Security Keys ──────────────────────────────────────────────────────
+
+  /**
+   * @openapi
+   * /driver/security-keys:
+   *   get:
+   *     tags: [Driver]
+   *     summary: Get currently configured security keys (hex strings)
+   *     responses:
+   *       200:
+   *         description: Security keys
+   */
+  router.get("/security-keys", (_req, res) => {
+    res.json(manager.getSecurityKeys());
+  });
+
+  /**
+   * @openapi
+   * /driver/security-keys:
+   *   put:
+   *     tags: [Driver]
+   *     summary: Set security keys (auto-generates any missing keys)
+   *     description: >
+   *       Accepts optional hex strings for each key. Any key not provided
+   *       will be auto-generated. Keys take effect on next driver restart.
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               S2_Unauthenticated:
+   *                 type: string
+   *                 description: 32-char hex string (16 bytes)
+   *               S2_Authenticated:
+   *                 type: string
+   *                 description: 32-char hex string (16 bytes)
+   *               S2_AccessControl:
+   *                 type: string
+   *                 description: 32-char hex string (16 bytes)
+   *               S0_Legacy:
+   *                 type: string
+   *                 description: 32-char hex string (16 bytes)
+   *               longRange:
+   *                 type: object
+   *                 properties:
+   *                   S2_Authenticated:
+   *                     type: string
+   *                     description: 32-char hex string (16 bytes)
+   *                   S2_AccessControl:
+   *                     type: string
+   *                     description: 32-char hex string (16 bytes)
+   *     responses:
+   *       200:
+   *         description: Keys stored (takes effect on restart)
+   */
+  router.put("/security-keys", asyncHandler(async (req, res) => {
+    const keys = await manager.setSecurityKeys(req.body || {});
+    res.json(keys);
+  }));
+
+  // ─── Restart ────────────────────────────────────────────────────────────
+
+  /**
+   * @openapi
+   * /driver/restart:
+   *   post:
+   *     tags: [Driver]
+   *     summary: Restart the Z-Wave driver with current configuration
+   *     description: >
+   *       Destroys the current driver and creates a new one with the
+   *       current security keys and config. Use after setting security keys.
+   *     responses:
+   *       200:
+   *         description: Driver restarted successfully
+   */
+  router.post("/restart", asyncHandler(async (_req, res) => {
+    await manager.restart();
+    res.json({ ok: true });
   }));
 
   return router;
