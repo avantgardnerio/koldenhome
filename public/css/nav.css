@@ -1,0 +1,24 @@
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav .brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.nav a {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.nav a:hover,
+.nav a.active {
+  color: var(--text);
+}

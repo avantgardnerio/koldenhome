@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KoldenHome</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/nav.css">
+  <link rel="stylesheet" href="/css/controller.css">
+  <link rel="stylesheet" href="/css/node.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "preact": "/node_modules/preact/dist/preact.mjs",
+      "preact/hooks": "/node_modules/preact/hooks/dist/hooks.mjs",
+      "htm": "/node_modules/htm/dist/htm.mjs",
+      "htm/preact": "/node_modules/htm/preact/index.mjs"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

@@ -47,6 +47,7 @@ const swaggerSpec = swaggerJsdoc({
       version: "0.1.0",
       description: "1:1 REST proxy to the zwave-js driver",
     },
+    servers: [{ url: "/api" }],
   },
   apis: [join(__dirname, "routes", "*.js")],
 });
@@ -54,18 +55,29 @@ const swaggerSpec = swaggerJsdoc({
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/openapi.json", (_req, res) => res.json(swaggerSpec));
 
+// ─── Static Files ───────────────────────────────────────────────────────────
+
+app.use(express.static(join(__dirname, "public")));
+app.use("/node_modules", express.static(join(__dirname, "node_modules")));
+
 // ─── Mount Routes ────────────────────────────────────────────────────────────
 
-app.use("/driver", driverRoutes(manager));
-app.use("/controller", controllerRoutes(manager));
-app.use("/controller/provisioning", smartstartRoutes(manager));
-app.use("/controller/nodes", associationRoutes(manager));
-app.use("/controller/routes", routingRoutes(manager));
-app.use("/controller/rf", rfRoutes(manager));
-app.use("/controller/nvm", nvmRoutes(manager));
-app.use("/controller/firmware-updates", firmwareRoutes(manager));
-app.use("/nodes", nodeRoutes(manager));
-app.use("/events", eventRoutes());
+app.use("/api/driver", driverRoutes(manager));
+app.use("/api/controller", controllerRoutes(manager));
+app.use("/api/controller/provisioning", smartstartRoutes(manager));
+app.use("/api/controller/nodes", associationRoutes(manager));
+app.use("/api/controller/routes", routingRoutes(manager));
+app.use("/api/controller/rf", rfRoutes(manager));
+app.use("/api/controller/nvm", nvmRoutes(manager));
+app.use("/api/controller/firmware-updates", firmwareRoutes(manager));
+app.use("/api/nodes", nodeRoutes(manager));
+app.use("/api/events", eventRoutes());
+
+// ─── SPA Catch-All ──────────────────────────────────────────────────────────
+
+app.get("/{*path}", (_req, res) => {
+  res.sendFile(join(__dirname, "public", "index.html"));
+});
 
 // ─── Error Handler ───────────────────────────────────────────────────────────
 
