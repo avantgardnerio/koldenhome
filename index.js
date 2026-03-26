@@ -48,6 +48,7 @@ const startServer = async () => {
   // ─── Express Setup ─────────────────────────────────────────────────────
 
   const app = express();
+  app.set("trust proxy", "loopback");
   const __dirname = dirname(fileURLToPath(import.meta.url));
 
   app.use(morgan("dev"));
@@ -65,6 +66,7 @@ const startServer = async () => {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
       sameSite: "lax",
+      secure: "auto",
     },
   }));
 
