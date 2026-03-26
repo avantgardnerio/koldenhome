@@ -58,3 +58,17 @@
   color: var(--text);
   border-color: var(--text-muted);
 }
+
+.nav-install {
+  font-size: 0.8rem;
+  padding: 0.25em 0.6em;
+  background: #2d6a4f;
+  border: 1px solid #40916c;
+  border-radius: 4px;
+  color: #b7e4c7;
+  cursor: pointer;
+}
+
+.nav-install:hover {
+  background: #40916c;
+}

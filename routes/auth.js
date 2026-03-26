@@ -2,6 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../lib/helpers.js";
 import { isLocalRequest, requireLocal, getAuthConfig, getOAuth2Client } from "../lib/auth.js";
 import {
+  findUserById,
   findUserByGoogleId,
   createUser,
   updateUserLogin,
@@ -22,25 +23,21 @@ export default () => {
    *       200:
    *         description: Auth state
    */
-  router.get("/me", (req, res) => {
+  router.get("/me", asyncHandler(async (req, res) => {
     const local = isLocalRequest(req);
     if (local) {
       return res.json({ authenticated: true, local: true, user: null });
     }
     if (req.session?.userId) {
-      const { role } = req.session;
-      if (role === "pending") {
+      const user = await findUserById(req.session.userId);
+      if (!user || user.role === "pending") {
         return res.json({ authenticated: false, local: false, pending: true, user: { email: req.session.email } });
       }
+      req.session.role = user.role;
       return res.json({
         authenticated: true,
         local: false,
-        user: {
-          id: req.session.userId,
-          email: req.session.email,
-          name: req.session.name,
-          picture: req.session.picture,
-        },
+        user: { id: user.id, email: user.email, name: user.name, picture: user.picture },
       });
     }
     const config = getAuthConfig();
@@ -49,7 +46,7 @@ export default () => {
       local: false,
       googleConfigured: !!(config?.google.clientId),
     });
-  });
+  }));
 
   /**
    * @openapi

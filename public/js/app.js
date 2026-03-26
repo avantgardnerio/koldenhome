@@ -7,6 +7,14 @@ import { Dashboard } from "./pages/dashboard.js";
 import { Controller } from "./pages/controller.js";
 import { NodeDetail } from "./pages/node.js";
 
+// PWA install prompt
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  window.dispatchEvent(new Event("installready"));
+});
+
 const routes = [
   { pattern: /^\/nodes\/(\d+)$/, component: NodeDetail, params: (m) => ({ id: m[1] }) },
   { pattern: /^\/controller$/, component: Controller },
@@ -26,9 +34,29 @@ export function navigate(path) {
   window.dispatchEvent(new Event("route"));
 }
 
+function useInstallPrompt() {
+  const [canInstall, setCanInstall] = useState(!!deferredPrompt);
+  useEffect(() => {
+    const onReady = () => setCanInstall(true);
+    window.addEventListener("installready", onReady);
+    return () => window.removeEventListener("installready", onReady);
+  }, []);
+  return {
+    canInstall,
+    install: async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      setCanInstall(false);
+    },
+  };
+}
+
 function App() {
   const [path, setPath] = useState(location.pathname);
   const auth = useAuth();
+  const installPrompt = useInstallPrompt();
 
   useEffect(() => {
     const onRoute = () => setPath(location.pathname);
@@ -51,7 +79,7 @@ function App() {
   const { component: Page, params } = match(path);
 
   return html`
-    <${Nav} path=${path} auth=${auth} />
+    <${Nav} path=${path} auth=${auth} installPrompt=${installPrompt} />
     <div class="container">
       <${Page} ...${params} />
     </div>
@@ -59,3 +87,7 @@ function App() {
 }
 
 render(html`<${App} />`, document.getElementById("app"));
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
+}
