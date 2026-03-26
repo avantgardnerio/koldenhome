@@ -1,6 +1,8 @@
 import { html, render } from "htm/preact";
 import { useState, useEffect } from "preact/hooks";
+import { useAuth } from "./auth.js";
 import { Nav } from "./components/nav.js";
+import { Login } from "./pages/login.js";
 import { Dashboard } from "./pages/dashboard.js";
 import { Controller } from "./pages/controller.js";
 import { NodeDetail } from "./pages/node.js";
@@ -26,6 +28,7 @@ export function navigate(path) {
 
 function App() {
   const [path, setPath] = useState(location.pathname);
+  const auth = useAuth();
 
   useEffect(() => {
     const onRoute = () => setPath(location.pathname);
@@ -37,10 +40,18 @@ function App() {
     };
   }, []);
 
+  if (auth.loading) {
+    return html`<div class="container"><p>Loading...</p></div>`;
+  }
+
+  if (!auth.authenticated) {
+    return html`<${Login} pending=${auth.pending} googleConfigured=${auth.googleConfigured} />`;
+  }
+
   const { component: Page, params } = match(path);
 
   return html`
-    <${Nav} path=${path} />
+    <${Nav} path=${path} auth=${auth} />
     <div class="container">
       <${Page} ...${params} />
     </div>

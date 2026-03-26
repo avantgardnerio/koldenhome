@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asyncHandler, getNode, serializeNode, logEvent } from "../lib/helpers.js";
 import { getDevice, getAllDevices, upsertDevice } from "../lib/db.js";
+import { requireLocal } from "../lib/auth.js";
 
 const router = Router();
 
@@ -560,7 +561,7 @@ export default (manager) => {
    *       200:
    *         description: Abort requested
    */
-  router.post("/:id/firmware/abort", asyncHandler(async (req, res) => {
+  router.post("/:id/firmware/abort", requireLocal, asyncHandler(async (req, res) => {
     const node = nodeOrBail(req, res);
     if (!node) return;
     await node.abortFirmwareUpdate();
@@ -608,7 +609,7 @@ export default (manager) => {
    *       200:
    *         description: Whether setting succeeded
    */
-  router.post("/:id/date-time", asyncHandler(async (req, res) => {
+  router.post("/:id/date-time", requireLocal, asyncHandler(async (req, res) => {
     const node = nodeOrBail(req, res);
     if (!node) return;
     const success = await node.setDateAndTime();

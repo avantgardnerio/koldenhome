@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/helpers.js";
+import { requireLocal } from "../lib/auth.js";
 
 const router = Router();
 
@@ -67,7 +68,7 @@ export default (manager) => {
    *       200:
    *         description: Whether inclusion was started
    */
-  router.post("/inclusion/start", asyncHandler(async (req, res) => {
+  router.post("/inclusion/start", requireLocal, asyncHandler(async (req, res) => {
     const options = req.body || { strategy: 0 };
     const started = await manager.getDriver().controller.beginInclusion(options);
     res.json({ started });
@@ -83,7 +84,7 @@ export default (manager) => {
    *       200:
    *         description: Whether inclusion was stopped
    */
-  router.post("/inclusion/stop", asyncHandler(async (_req, res) => {
+  router.post("/inclusion/stop", requireLocal, asyncHandler(async (_req, res) => {
     const stopped = await manager.getDriver().controller.stopInclusion();
     res.json({ stopped });
   }));
@@ -107,7 +108,7 @@ export default (manager) => {
    *       200:
    *         description: Whether exclusion was started
    */
-  router.post("/exclusion/start", asyncHandler(async (req, res) => {
+  router.post("/exclusion/start", requireLocal, asyncHandler(async (req, res) => {
     const options = req.body || { strategy: 0 };
     const started = await manager.getDriver().controller.beginExclusion(options);
     res.json({ started });
@@ -123,7 +124,7 @@ export default (manager) => {
    *       200:
    *         description: Whether exclusion was stopped
    */
-  router.post("/exclusion/stop", asyncHandler(async (_req, res) => {
+  router.post("/exclusion/stop", requireLocal, asyncHandler(async (_req, res) => {
     const stopped = await manager.getDriver().controller.stopExclusion();
     res.json({ stopped });
   }));
@@ -165,7 +166,7 @@ export default (manager) => {
    *       200:
    *         description: Node removed
    */
-  router.post("/nodes/:id/remove-failed", asyncHandler(async (req, res) => {
+  router.post("/nodes/:id/remove-failed", requireLocal, asyncHandler(async (req, res) => {
     await manager.getDriver().controller.removeFailedNode(Number(req.params.id));
     res.json({ ok: true });
   }));
@@ -197,7 +198,7 @@ export default (manager) => {
    *       200:
    *         description: Whether configuration succeeded
    */
-  router.post("/nodes/:id/configure-suc", asyncHandler(async (req, res) => {
+  router.post("/nodes/:id/configure-suc", requireLocal, asyncHandler(async (req, res) => {
     const success = await manager.getDriver().controller.configureSUC(
       Number(req.params.id),
       req.body.enableSUC,

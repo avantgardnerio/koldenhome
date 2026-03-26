@@ -5,6 +5,13 @@ async function request(method, path, body) {
   };
   if (body !== undefined) opts.body = JSON.stringify(body);
   const res = await fetch("/api" + path, opts);
+  if (res.status === 401) {
+    window.dispatchEvent(new CustomEvent("auth", { detail: { status: 401 } }));
+    throw new Error("Authentication required");
+  }
+  if (res.status === 403) {
+    throw new Error("Localhost access only");
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || res.statusText);

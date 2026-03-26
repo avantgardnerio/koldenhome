@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/helpers.js";
+import { requireLocal } from "../lib/auth.js";
 
 const router = Router();
 
@@ -75,7 +76,7 @@ export default (manager) => {
    *       200:
    *         description: Soft reset completed
    */
-  router.post("/soft-reset", asyncHandler(async (_req, res) => {
+  router.post("/soft-reset", requireLocal, asyncHandler(async (_req, res) => {
     await manager.getDriver().softReset();
     res.json({ ok: true });
   }));
@@ -90,7 +91,7 @@ export default (manager) => {
    *       200:
    *         description: Hard reset completed
    */
-  router.post("/hard-reset", asyncHandler(async (_req, res) => {
+  router.post("/hard-reset", requireLocal, asyncHandler(async (_req, res) => {
     await manager.getDriver().hardReset();
     res.json({ ok: true });
   }));
@@ -105,7 +106,7 @@ export default (manager) => {
    *       200:
    *         description: Shutdown result
    */
-  router.post("/shutdown", asyncHandler(async (_req, res) => {
+  router.post("/shutdown", requireLocal, asyncHandler(async (_req, res) => {
     const success = await manager.getDriver().shutdown();
     res.json({ ok: success });
   }));
@@ -135,7 +136,7 @@ export default (manager) => {
    *       200:
    *         description: Whether an update was installed
    */
-  router.post("/config-updates/install", asyncHandler(async (_req, res) => {
+  router.post("/config-updates/install", requireLocal, asyncHandler(async (_req, res) => {
     const installed = await manager.getDriver().installConfigUpdate();
     res.json({ installed });
   }));
@@ -152,7 +153,7 @@ export default (manager) => {
    *       200:
    *         description: Security keys
    */
-  router.get("/security-keys", (_req, res) => {
+  router.get("/security-keys", requireLocal, (_req, res) => {
     res.json(manager.getSecurityKeys());
   });
 
@@ -196,7 +197,7 @@ export default (manager) => {
    *       200:
    *         description: Keys stored (takes effect on restart)
    */
-  router.put("/security-keys", asyncHandler(async (req, res) => {
+  router.put("/security-keys", requireLocal, asyncHandler(async (req, res) => {
     const keys = await manager.setSecurityKeys(req.body || {});
     res.json(keys);
   }));
@@ -216,7 +217,7 @@ export default (manager) => {
    *       200:
    *         description: Driver restarted successfully
    */
-  router.post("/restart", asyncHandler(async (_req, res) => {
+  router.post("/restart", requireLocal, asyncHandler(async (_req, res) => {
     await manager.restart();
     res.json({ ok: true });
   }));
