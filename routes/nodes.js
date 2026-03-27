@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { asyncHandler, getNode, serializeNode, logEvent } from "../lib/helpers.js";
+import { asyncHandler, getNode, serializeNode, serializeNodeDetail, logEvent } from "../lib/helpers.js";
 import { getDevice, getAllDevices, upsertDevice } from "../lib/db.js";
 import { requireLocal } from "../lib/auth.js";
 
@@ -52,7 +52,7 @@ export default (manager) => {
   router.get("/:id", (req, res) => {
     const node = nodeOrBail(req, res);
     if (!node) return;
-    res.json(serializeNode(node));
+    res.json(serializeNodeDetail(node));
   });
 
   /**
