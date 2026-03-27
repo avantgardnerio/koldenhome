@@ -52,7 +52,7 @@ const startServer = async () => {
   app.set("trust proxy", "loopback");
   const __dirname = dirname(fileURLToPath(import.meta.url));
 
-  app.use(morgan(":remote-addr :method :url :status :response-time ms :user-agent"));
+  app.use(morgan(":date[iso] :remote-addr :method :url :status :response-time ms :user-agent"));
   app.use(createRateLimiter());
   app.use(express.json());
 
