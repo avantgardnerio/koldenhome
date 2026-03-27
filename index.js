@@ -10,6 +10,7 @@ import { dirname, join } from "path";
 import { createDriverManager } from "./lib/driver-manager.js";
 import { runMigrations, pool } from "./lib/db.js";
 import { loadAuthConfig, requireAuth, requireLocal } from "./lib/auth.js";
+import { createRateLimiter } from "./lib/rate-limit.js";
 
 import authRoutes from "./routes/auth.js";
 import driverRoutes from "./routes/driver.js";
@@ -52,6 +53,7 @@ const startServer = async () => {
   const __dirname = dirname(fileURLToPath(import.meta.url));
 
   app.use(morgan(":remote-addr :method :url :status :response-time ms :user-agent"));
+  app.use(createRateLimiter());
   app.use(express.json());
 
   // ─── Session Middleware ────────────────────────────────────────────────
