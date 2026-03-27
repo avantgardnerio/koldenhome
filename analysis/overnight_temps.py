@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Plot overnight temperature data from Aeotec sensors."""
 
+import matplotlib
+matplotlib.use('GTK3Agg')
 import psycopg2
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -49,5 +51,4 @@ fig.autofmt_xdate()
 ax.set_ylim(58, 78)
 
 plt.tight_layout()
-plt.savefig('overnight_temps.png', dpi=150)
-print("Saved overnight_temps.png")
+plt.show()
