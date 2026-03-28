@@ -1,4 +1,6 @@
 matplotlib
 psycopg2-binary
+scipy
+numpy
 PyGObject
 pycairo
