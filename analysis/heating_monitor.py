@@ -60,13 +60,20 @@ ax.annotate('Heat ON', xy=(heat_on2, 77),
             xytext=(10, -20), textcoords='offset points',
             fontsize=11, fontweight='bold', color='#e67e22')
 
+# Circ fan experiment started ~12:21 PM Mar 28
+circ_on = datetime(2026, 3, 28, 12, 21, tzinfo=mtn)
+ax.axvline(circ_on, color='#27ae60', linewidth=2, linestyle='--', label='Circ Fan ON')
+ax.annotate('Circ Fan ON', xy=(circ_on, 77),
+            xytext=(10, -20), textcoords='offset points',
+            fontsize=11, fontweight='bold', color='#27ae60')
+
 ax.set_title('Temperature Monitoring — Heat Recovery', fontsize=16, fontweight='bold')
 ax.set_xlabel('Time', fontsize=12)
 ax.set_ylabel('Temperature (°F)', fontsize=12)
 ax.legend(fontsize=11, loc='upper right')
 ax.grid(True, alpha=0.3)
 
-ax.xaxis.set_major_formatter(mdates.DateFormatter('%-I:%M %p', tz=mtn))
+ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=mtn))
 ax.xaxis.set_major_locator(mdates.HourLocator(interval=2, tz=mtn))
 fig.autofmt_xdate()
 
