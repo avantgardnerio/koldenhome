@@ -28,14 +28,50 @@ sudo systemctl restart postgresql
 ## Database setup
 
 ```bash
-# Set the postgres user password to 'postgres'
-sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
-
 # Create the database
-PGPASSWORD=postgres psql -U postgres -c "CREATE DATABASE koldenhome;"
+sudo -u postgres psql -c "CREATE DATABASE koldenhome;"
+
+# Create app user (DML only — SELECT, INSERT, UPDATE, DELETE)
+sudo -u postgres psql -d koldenhome -c "
+CREATE USER koldenhome;
+GRANT CONNECT ON DATABASE koldenhome TO koldenhome;
+GRANT USAGE ON SCHEMA public TO koldenhome;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO koldenhome;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO koldenhome;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO koldenhome;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO koldenhome;
+"
+
+# Create migrations user (DDL — CREATE, ALTER, DROP tables)
+sudo -u postgres psql -d koldenhome -c "
+CREATE USER koldenhome_migrations;
+GRANT ALL ON DATABASE koldenhome TO koldenhome_migrations;
+GRANT ALL ON SCHEMA public TO koldenhome_migrations;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO koldenhome_migrations;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO koldenhome_migrations;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO koldenhome_migrations;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO koldenhome_migrations;
+"
 ```
 
-Migrations run automatically on server start.
+Add trust auth for both users in `/etc/postgresql/17/main/pg_hba.conf` (before the default rules):
+
+```
+local   koldenhome      koldenhome                              trust
+host    koldenhome      koldenhome      127.0.0.1/32            trust
+host    koldenhome      koldenhome      ::1/128                 trust
+local   koldenhome      koldenhome_migrations                   trust
+host    koldenhome      koldenhome_migrations   127.0.0.1/32    trust
+host    koldenhome      koldenhome_migrations   ::1/128         trust
+```
+
+Then reload PostgreSQL:
+
+```bash
+sudo systemctl reload postgresql
+```
+
+Migrations run automatically on server start (as `koldenhome_migrations`). The app connects as `koldenhome` at runtime.
 
 ## Run
 
