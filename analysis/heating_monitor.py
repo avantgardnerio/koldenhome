@@ -53,6 +53,13 @@ ax.annotate('Heat OFF', xy=(heat_off, 77),
             xytext=(10, -20), textcoords='offset points',
             fontsize=11, fontweight='bold', color='#8e44ad')
 
+# Heat turned on again ~6:08 AM Mar 28
+heat_on2 = datetime(2026, 3, 28, 6, 8, tzinfo=mtn)
+ax.axvline(heat_on2, color='#e67e22', linewidth=2, linestyle='--')
+ax.annotate('Heat ON', xy=(heat_on2, 77),
+            xytext=(10, -20), textcoords='offset points',
+            fontsize=11, fontweight='bold', color='#e67e22')
+
 ax.set_title('Temperature Monitoring — Heat Recovery', fontsize=16, fontweight='bold')
 ax.set_xlabel('Time', fontsize=12)
 ax.set_ylabel('Temperature (°F)', fontsize=12)
