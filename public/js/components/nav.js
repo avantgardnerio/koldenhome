@@ -34,8 +34,7 @@ export function Nav({ path, auth, installPrompt }) {
         ? html`<span class="nav-badge local">Local</span>`
         : auth.user
           ? html`
-              <span class="nav-user">${auth.user.name || auth.user.email}</span>
-              <button class="nav-logout" onClick=${logout}>Logout</button>
+              <img class="nav-avatar" src=${auth.user.picture} alt="" onClick=${logout} title="Logout" />
             `
           : null
       }

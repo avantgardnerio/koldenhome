@@ -5,6 +5,9 @@ Z-Wave REST API proxy.
 ## Prerequisites
 
 ```bash
+# Node.js 24 LTS (via snap, auto-updates)
+sudo snap install node --classic --channel=24
+
 # PostgreSQL 17
 sudo apt install postgresql-17
 
@@ -84,9 +87,23 @@ Swagger UI at http://localhost:3000/docs
 
 ## Caddy Reverse Proxy
 
-When exposing the app via Caddy, use a path whitelist to block scanners. Copy to `/etc/caddy/Caddyfile` and replace `your.domain.example` with your actual domain:
+Install Caddy as a static binary (Ubuntu repos lag too far behind on security patches):
+
+```bash
+# Download latest from https://github.com/caddyserver/caddy/releases
+sudo curl -sL "https://github.com/caddyserver/caddy/releases/download/v2.11.2/caddy_2.11.2_linux_amd64.tar.gz" -o /tmp/caddy.tar.gz
+sudo tar -xzf /tmp/caddy.tar.gz -C /usr/bin caddy
+sudo chmod +x /usr/bin/caddy
+sudo setcap cap_net_bind_service=+ep /usr/bin/caddy
+```
+
+Use a path whitelist to block scanners. Copy to `/etc/caddy/Caddyfile` and replace `your.domain.example` with your actual domain:
 
 ```caddyfile
+{
+	admin off
+}
+
 # Reject scanners hitting by IP or wrong Host header
 :80 {
 	respond 444
@@ -98,6 +115,8 @@ When exposing the app via Caddy, use a path whitelist to block scanners. Copy to
 }
 
 your.domain.example {
+	header -Server
+
 	# Only allow known paths — everything else gets 403
 	@allowed {
 		path / /controller /login /nodes/*
@@ -120,9 +139,26 @@ your.domain.example {
 }
 ```
 
+Harden the systemd unit with an override at `/etc/systemd/system/caddy.service.d/override.conf`:
+
+```ini
+[Service]
+CapabilityBoundingSet=cap_net_bind_service
+AmbientCapabilities=cap_net_bind_service
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/caddy /var/log/caddy
+PrivateTmp=yes
+ProtectControlGroups=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+```
+
 After updating, validate and reload:
 
 ```sh
 sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl daemon-reload
 sudo systemctl reload caddy
 ```
