@@ -1,5 +1,7 @@
 import { html } from "htm/preact";
+import { useState, useEffect } from "preact/hooks";
 import { navigate } from "../app.js";
+import { onServerTime, getLastServerTime } from "../api.js";
 
 function link(e, path) {
   e.preventDefault();
@@ -11,10 +13,16 @@ async function logout() {
   window.dispatchEvent(new CustomEvent("auth"));
 }
 
+function fmt(d) {
+  return d ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) : "--:--";
+}
+
 export function Nav({ path, auth, installPrompt }) {
+  const [time, setTime] = useState(fmt(getLastServerTime()));
+  useEffect(() => onServerTime((t) => setTime(fmt(t))), []);
   return html`
     <nav class="nav">
-      <span class="brand">KoldenHome</span>
+      <span class="nav-clock">${time}</span>
       <a href="/" class=${path === "/" ? "active" : ""} onClick=${(e) => link(e, "/")}>Dashboard</a>
       <a href="/controller" class=${path === "/controller" ? "active" : ""} onClick=${(e) => link(e, "/controller")}>Controller</a>
       <span class="nav-spacer" />

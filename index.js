@@ -101,6 +101,7 @@ const startServer = async () => {
 
   // ─── Tier 1: requireAuth on all /api/* ────────────────────────────────
 
+  app.use("/api", (_req, res, next) => { res.set("X-Server-Time", new Date().toISOString()); next(); });
   app.use("/api", requireAuth);
 
   // ─── Localhost-only Route Groups (Tier 2) ─────────────────────────────

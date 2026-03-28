@@ -1,3 +1,9 @@
+let lastServerTime = null;
+const listeners = new Set();
+
+export function onServerTime(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+export function getLastServerTime() { return lastServerTime; }
+
 async function request(method, path, body) {
   const opts = {
     method,
@@ -5,6 +11,11 @@ async function request(method, path, body) {
   };
   if (body !== undefined) opts.body = JSON.stringify(body);
   const res = await fetch("/api" + path, opts);
+  const t = res.headers.get("X-Server-Time");
+  if (t) {
+    lastServerTime = new Date(t);
+    listeners.forEach((fn) => fn(lastServerTime));
+  }
   if (res.status === 401) {
     window.dispatchEvent(new CustomEvent("auth", { detail: { status: 401 } }));
     throw new Error("Authentication required");

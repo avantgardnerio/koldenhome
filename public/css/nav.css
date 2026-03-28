@@ -7,10 +7,10 @@
   border-bottom: 1px solid var(--border);
 }
 
-.nav .brand {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: var(--text);
+.nav-clock {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .nav a {
