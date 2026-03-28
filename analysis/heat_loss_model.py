@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo
 mtn = ZoneInfo('America/Denver')
 T_outside = 33.0  # approximate average outside temp overnight
 
-conn = psycopg2.connect(dbname="koldenhome", user="postgres", password="postgres")
+conn = psycopg2.connect(dbname="koldenhome", user="koldenhome")
 cur = conn.cursor()
 cur.execute("""
     SELECT node_id, time, value::text::float

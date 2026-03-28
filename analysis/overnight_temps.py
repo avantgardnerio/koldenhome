@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from zoneinfo import ZoneInfo
 
-conn = psycopg2.connect(dbname="koldenhome", user="postgres", password="postgres")
+conn = psycopg2.connect(dbname="koldenhome", user="koldenhome")
 cur = conn.cursor()
 
 cur.execute("""
