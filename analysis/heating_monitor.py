@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Plot temperature data with heating start marker."""
+"""Plot temperature data with outdoor temp and thermostat duty cycle."""
 
 import matplotlib
 matplotlib.use('GTK3Agg')
 import psycopg2
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from datetime import datetime
 from zoneinfo import ZoneInfo
 
 mtn = ZoneInfo('America/Denver')
@@ -14,6 +13,7 @@ mtn = ZoneInfo('America/Denver')
 conn = psycopg2.connect(dbname="koldenhome", user="koldenhome")
 cur = conn.cursor()
 
+# Indoor temps (nodes 58, 59)
 cur.execute("""
     SELECT node_id, time, value::text::float
     FROM events
@@ -21,63 +21,77 @@ cur.execute("""
       AND property = 'Air temperature'
     ORDER BY time
 """)
-rows = cur.fetchall()
+indoor_rows = cur.fetchall()
+
+# Outdoor temp (node 60)
+cur.execute("""
+    SELECT time, value::text::float
+    FROM events
+    WHERE node_id = 60
+      AND property = 'Air temperature'
+    ORDER BY time
+""")
+outdoor_rows = cur.fetchall()
+
+# Thermostat operating state (node 61): 0=Idle, 1=Heating, 2=Cooling
+cur.execute("""
+    SELECT time, value::text::int
+    FROM events
+    WHERE node_id = 61
+      AND property = 'state'
+    ORDER BY time
+""")
+state_rows = cur.fetchall()
+
 conn.close()
 
-top = [(r[1].astimezone(mtn), r[2]) for r in rows if r[0] == 58]
-basement = [(r[1].astimezone(mtn), r[2]) for r in rows if r[0] == 59]
+top = [(r[1].astimezone(mtn), r[2]) for r in indoor_rows if r[0] == 58]
+basement = [(r[1].astimezone(mtn), r[2]) for r in indoor_rows if r[0] == 59]
+outside = [(r[0].astimezone(mtn), r[1]) for r in outdoor_rows]
+states = [(r[0].astimezone(mtn), r[1]) for r in state_rows]
 
-fig, ax = plt.subplots(figsize=(12, 6))
+fig, ax = plt.subplots(figsize=(14, 7))
 
+# Temperature lines
 ax.plot([t for t, _ in top], [v for _, v in top],
-        marker='o', markersize=4, linewidth=2, color='#e74c3c', label="Brent's Office (Top Floor)")
+        marker='o', markersize=3, linewidth=2, color='#e74c3c',
+        label="Brent's Office (Top Floor)")
 ax.plot([t for t, _ in basement], [v for _, v in basement],
-        marker='o', markersize=4, linewidth=2, color='#3498db', label="Rachel's Office (Basement)")
+        marker='o', markersize=3, linewidth=2, color='#3498db',
+        label="Rachel's Office (Basement)")
+ax.plot([t for t, _ in outside], [v for _, v in outside],
+        marker='o', markersize=3, linewidth=2, color='#95a5a6',
+        label="Back Porch (Outside)")
 
-ax.fill_between([t for t, _ in top], [v for _, v in top],
-                alpha=0.15, color='#e74c3c')
-ax.fill_between([t for t, _ in basement], [v for _, v in basement],
-                alpha=0.15, color='#3498db')
+# Duty cycle as step plot on secondary y-axis
+if states:
+    ax2 = ax.twinx()
+    ax2.fill_between([t for t, _ in states], [s for _, s in states],
+                     step='post', alpha=0.25, color='#e67e22', label='Furnace Heating')
+    ax2.step([t for t, _ in states], [s for _, s in states],
+             where='post', color='#e67e22', linewidth=1.5, alpha=0.6)
+    ax2.set_ylim(-0.05, 1.05)
+    ax2.set_ylabel('Furnace State', fontsize=12, color='#e67e22')
+    ax2.set_yticks([0, 1])
+    ax2.set_yticklabels(['Off', 'On'], fontsize=10, color='#e67e22')
+    ax2.tick_params(axis='y', colors='#e67e22')
 
-# Heat turned on ~9:20 AM
-heat_on = datetime(2026, 3, 27, 9, 20, tzinfo=mtn)
-ax.axvline(heat_on, color='#e67e22', linewidth=2, linestyle='--', label='Heat turned on')
-ax.annotate('Heat ON', xy=(heat_on, 77),
-            xytext=(10, -20), textcoords='offset points',
-            fontsize=11, fontweight='bold', color='#e67e22')
-
-# Heat turned off ~1:15 PM
-heat_off = datetime(2026, 3, 27, 20, 19, tzinfo=mtn)
-ax.axvline(heat_off, color='#8e44ad', linewidth=2, linestyle='--', label='Heat turned off')
-ax.annotate('Heat OFF', xy=(heat_off, 77),
-            xytext=(10, -20), textcoords='offset points',
-            fontsize=11, fontweight='bold', color='#8e44ad')
-
-# Heat turned on again ~6:08 AM Mar 28
-heat_on2 = datetime(2026, 3, 28, 6, 8, tzinfo=mtn)
-ax.axvline(heat_on2, color='#e67e22', linewidth=2, linestyle='--')
-ax.annotate('Heat ON', xy=(heat_on2, 77),
-            xytext=(10, -20), textcoords='offset points',
-            fontsize=11, fontweight='bold', color='#e67e22')
-
-# Circ fan experiment started ~12:21 PM Mar 28
-circ_on = datetime(2026, 3, 28, 12, 21, tzinfo=mtn)
-ax.axvline(circ_on, color='#27ae60', linewidth=2, linestyle='--', label='Circ Fan ON')
-ax.annotate('Circ Fan ON', xy=(circ_on, 77),
-            xytext=(10, -20), textcoords='offset points',
-            fontsize=11, fontweight='bold', color='#27ae60')
-
-ax.set_title('Temperature Monitoring — Heat Recovery', fontsize=16, fontweight='bold')
+ax.set_title('Temperature Monitoring — All Zones + Duty Cycle', fontsize=16, fontweight='bold')
 ax.set_xlabel('Time', fontsize=12)
 ax.set_ylabel('Temperature (°F)', fontsize=12)
-ax.legend(fontsize=11, loc='upper right')
+
+# Combined legend from both axes
+lines1, labels1 = ax.get_legend_handles_labels()
+if states:
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax.legend(lines1 + lines2, labels1 + labels2, fontsize=11, loc='upper right')
+else:
+    ax.legend(fontsize=11, loc='upper right')
 ax.grid(True, alpha=0.3)
 
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=mtn))
 ax.xaxis.set_major_locator(mdates.HourLocator(interval=2, tz=mtn))
 fig.autofmt_xdate()
-
-ax.set_ylim(58, 78)
 
 plt.tight_layout()
 plt.show()
