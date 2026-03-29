@@ -85,6 +85,21 @@ npm start
 
 Swagger UI at http://localhost:3000/docs
 
+## Plugins
+
+Plugins are DB-driven (JSONB config in `plugins` table) and loaded on driver ready. Each plugin type maps to a file in `plugins/`.
+
+To add a plugin instance:
+
+```sql
+INSERT INTO plugins (type, name, config) VALUES
+('hvac-mode', 'Main Floor HVAC', '{"sensor_node_id": 61, "thermostat_node_id": 61, "heat_below": 62, "cool_above": 74}');
+```
+
+Available plugin types:
+
+- **hvac-mode** — Automatic heat/cool mode switching based on temperature thresholds. Dead-band hysteresis: sets Heat when temp drops below `heat_below`, Cool when temp rises above `cool_above`, holds current mode between thresholds.
+
 ## Caddy Reverse Proxy
 
 Install Caddy as a static binary (Ubuntu repos lag too far behind on security patches):
@@ -106,15 +121,24 @@ Use a path whitelist to block scanners. Copy to `/etc/caddy/Caddyfile` and repla
 
 # Reject scanners hitting by IP or wrong Host header
 :80 {
+	log {
+		output file /var/log/caddy/access.log
+	}
 	respond 444
 }
 
 :443 {
 	tls internal
+	log {
+		output file /var/log/caddy/access.log
+	}
 	respond 444
 }
 
 your.domain.example {
+	log {
+		output file /var/log/caddy/access.log
+	}
 	header -Server
 
 	# Only allow known paths — everything else gets 403
