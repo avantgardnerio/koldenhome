@@ -42,6 +42,7 @@ export default (manager) => {
           [item.false_value]: metadata.states[String(item.false_value)] ?? String(item.false_value),
           [item.true_value]: metadata.states[String(item.true_value)] ?? String(item.true_value),
         };
+        metadata.trueValue = item.true_value;
       }
       return {
         ...item,

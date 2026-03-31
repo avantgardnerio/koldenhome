@@ -29,7 +29,8 @@ export function ValueControl({ value, metadata, onSet }) {
   // Number with exactly 2 states → toggle switch (one tap, auto-persists)
   const stateKeys = states ? Object.keys(states) : [];
   if (states && stateKeys.length === 2) {
-    const [offKey, onKey] = stateKeys;
+    const onKey = metadata.trueValue != null ? String(metadata.trueValue) : stateKeys[1];
+    const offKey = stateKeys.find((k) => k !== onKey);
     const isOn = String(pending) === onKey;
     const toggle = () => {
       const next = isOn ? Number(offKey) : Number(onKey);
