@@ -64,12 +64,22 @@ export default (manager) => {
    *               strategy:
    *                 type: number
    *                 description: "0=Default, 2=Insecure, 3=S0, 4=S2"
+   *               pin:
+   *                 type: string
+   *                 description: "5-digit DSK PIN for S2 inclusion (printed on device)"
    *     responses:
    *       200:
    *         description: Whether inclusion was started
    */
   router.post("/inclusion/start", requireLocal, asyncHandler(async (req, res) => {
-    const options = req.body || { strategy: 0 };
+    const { pin, ...options } = req.body || { strategy: 0 };
+    if (pin) {
+      options.userCallbacks = {
+        grantSecurityClasses: (requested) => Promise.resolve(requested),
+        validateDSKAndEnterPIN: (_dsk) => Promise.resolve(pin),
+        abort: () => console.log("[inclusion] S2 bootstrap aborted"),
+      };
+    }
     const started = await manager.getDriver().controller.beginInclusion(options);
     res.json({ started });
   }));
