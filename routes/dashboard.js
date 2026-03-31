@@ -36,10 +36,17 @@ export default (manager) => {
       const readId = item.read_property
         ? { ...writeId, property: item.read_property, propertyKey: item.read_property_key ?? undefined }
         : writeId;
+      const metadata = node.getValueMetadata(writeId);
+      if (item.true_value != null && item.false_value != null && metadata.states) {
+        metadata.states = {
+          [item.false_value]: metadata.states[String(item.false_value)] ?? String(item.false_value),
+          [item.true_value]: metadata.states[String(item.true_value)] ?? String(item.true_value),
+        };
+      }
       return {
         ...item,
         value: node.getValue(readId),
-        metadata: node.getValueMetadata(writeId),
+        metadata,
       };
     });
     res.json(enriched);
