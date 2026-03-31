@@ -85,6 +85,43 @@ npm start
 
 Swagger UI at http://localhost:3000/docs
 
+### Systemd service
+
+Create `/etc/systemd/system/koldenhome.service`, replacing `<user>` and the `WorkingDirectory` with your values:
+
+```ini
+[Unit]
+Description=KoldenHome Z-Wave REST API
+After=network.target postgresql.service
+StartLimitBurst=3
+StartLimitIntervalSec=300
+
+[Service]
+Type=simple
+User=<user>
+WorkingDirectory=/path/to/koldenhome
+ExecStart=/snap/bin/node index.js
+Environment=NODE_ENV=production
+SupplementaryGroups=dialout
+Restart=on-failure
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then enable and start:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable koldenhome
+sudo systemctl start koldenhome
+```
+
+Logs via `journalctl -u koldenhome -f`. Restarts on failure with a 30s delay, gives up after 3 failures in 5 minutes.
+
 ## Plugins
 
 Plugins are DB-driven (JSONB config in `plugins` table) and loaded on driver ready. Each plugin type maps to a file in `plugins/`.
