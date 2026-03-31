@@ -105,6 +105,7 @@ Environment=NODE_ENV=production
 SupplementaryGroups=dialout
 Restart=on-failure
 RestartSec=30
+SyslogIdentifier=koldenhome
 StandardOutput=journal
 StandardError=journal
 
@@ -120,7 +121,7 @@ sudo systemctl enable koldenhome
 sudo systemctl start koldenhome
 ```
 
-Logs via `journalctl -u koldenhome -f`. Restarts on failure with a 30s delay, gives up after 3 failures in 5 minutes.
+Logs via `journalctl -t koldenhome -f` (uses `-t` not `-u` because snap node runs under the user cgroup). Restarts on failure with a 30s delay, gives up after 3 failures in 5 minutes.
 
 ## Plugins
 
