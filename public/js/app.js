@@ -89,5 +89,7 @@ function App() {
 render(html`<${App} />`, document.getElementById("app"));
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
+  navigator.serviceWorker.register("/sw.js")
+    .then(() => import("./push.js").then((m) => m.registerPush()))
+    .catch((err) => console.warn("[sw]", err.message));
 }

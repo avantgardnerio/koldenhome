@@ -11,6 +11,7 @@ import { createDriverManager } from "./lib/driver-manager.js";
 import { runMigrations, pool } from "./lib/db.js";
 import { loadAuthConfig, requireAuth, requireLocal } from "./lib/auth.js";
 import { createRateLimiter } from "./lib/rate-limit.js";
+import { initPush } from "./lib/notify.js";
 
 import authRoutes from "./routes/auth.js";
 import driverRoutes from "./routes/driver.js";
@@ -24,6 +25,7 @@ import firmwareRoutes from "./routes/firmware.js";
 import nodeRoutes from "./routes/nodes.js";
 import eventRoutes from "./routes/events.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import pushRoutes from "./routes/push.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -42,6 +44,9 @@ const manager = createDriverManager({
 const startServer = async () => {
   await runMigrations();
   console.log("Database migrations complete");
+
+  await initPush();
+  console.log("Web Push configured");
 
   const authConfig = await loadAuthConfig();
   console.log("Auth config loaded", authConfig.google.clientId ? "(Google OAuth configured)" : "(Google OAuth not configured)");
@@ -120,6 +125,7 @@ const startServer = async () => {
   app.use("/api/nodes", nodeRoutes(manager));
   app.use("/api/events", eventRoutes());
   app.use("/api/dashboard", dashboardRoutes(manager));
+  app.use("/api/push", pushRoutes());
 
   // ─── SPA Catch-All ────────────────────────────────────────────────────
 
