@@ -26,15 +26,27 @@ cur.execute("""
 """)
 temp_rows = cur.fetchall()
 
-# Thermostat operating state: 0=Idle, 1=Heating, 2=Cooling
+# Thermostat operating state (CC 69): 0=Idle, 1=Heating, 2=Cooling
 cur.execute("""
     SELECT time, value::text::int
     FROM events
     WHERE node_id = 61
       AND property = 'state'
+      AND command_class = 69
     ORDER BY time
 """)
 state_rows = cur.fetchall()
+
+# Fan mode (CC 68): 0=Auto Low, 6=Circulation — tracks when plugin enables circ fan
+cur.execute("""
+    SELECT time, value::text::int
+    FROM events
+    WHERE node_id = 61
+      AND property = 'mode'
+      AND command_class = 68
+    ORDER BY time
+""")
+fan_mode_rows = cur.fetchall()
 
 # Dead band thresholds from plugin config
 cur.execute("""
@@ -56,6 +68,7 @@ outside = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 60]
 thermostat = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 61]
 brood = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 62]
 states = [(r[0].astimezone(mtn), r[1]) for r in state_rows]
+fan_modes = [(r[0].astimezone(mtn), r[1]) for r in fan_mode_rows]
 
 fig, ax = plt.subplots(figsize=(18, 7))
 
@@ -95,7 +108,8 @@ for series, color in [(top, '#e74c3c'), (basement, '#3498db'),
                     interpolate=True, alpha=0.15, color=color)
 
 # Hour-aligned duty cycle buckets on secondary y-axis
-if states:
+has_duty_data = states or fan_modes
+if has_duty_data:
     ax2 = ax.twinx()
     times = [t for t, _ in states]
     vals = [s for _, s in states]
@@ -146,6 +160,43 @@ if states:
             ax2.bar(bucket_centers, cool_buckets, width=bar_width, alpha=0.35,
                     color='#2980b9', label='Cooling %')
 
+    # Circ fan duty cycle — same bucket logic, fan mode 6 = Circulation is "on"
+    if fan_modes:
+        fm_times = [t for t, _ in fan_modes]
+        fm_vals = [m for _, m in fan_modes]
+
+        if len(fm_times) >= 2:
+            fm_first = fm_times[0].replace(minute=0, second=0, microsecond=0)
+            fm_last = fm_times[-1].replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+
+            fan_buckets = []
+            fan_centers = []
+            hour = fm_first
+            while hour < fm_last:
+                next_hour = hour + timedelta(hours=1)
+                circ_secs = 0.0
+
+                for i in range(len(fm_times)):
+                    t_start = fm_times[i]
+                    t_end_seg = fm_times[i + 1] if i + 1 < len(fm_times) else next_hour
+
+                    seg_start = max(t_start, hour)
+                    seg_end = min(t_end_seg, next_hour)
+                    if seg_start >= seg_end:
+                        continue
+
+                    if fm_vals[i] == 6:  # Circulation
+                        circ_secs += (seg_end - seg_start).total_seconds()
+
+                bucket_secs = (next_hour - hour).total_seconds()
+                fan_buckets.append(circ_secs / bucket_secs)
+                fan_centers.append(hour + timedelta(minutes=30))
+                hour = next_hour
+
+            if any(v > 0 for v in fan_buckets):
+                ax2.bar(fan_centers, fan_buckets, width=bar_width, alpha=0.35,
+                        color='#27ae60', label='Circ Fan %')
+
     ax2.set_ylim(-0.02, 1.05)
     ax2.set_ylabel('Duty Cycle %', fontsize=12)
     ax2.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
@@ -183,7 +234,7 @@ if all_times:
 
 # Combined legend (after sun lines so they're included)
 lines1, labels1 = ax.get_legend_handles_labels()
-if states:
+if has_duty_data:
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax.legend(lines1 + lines2, labels1 + labels2, fontsize=10, loc='upper left')
 else:
