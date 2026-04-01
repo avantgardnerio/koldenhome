@@ -26,13 +26,13 @@ cur.execute("""
 """)
 temp_rows = cur.fetchall()
 
-# Thermostat operating state (CC 69): 0=Idle, 1=Heating, 2=Cooling
+# Thermostat operating state (CC 66): 0=Idle, 1=Heating, 2=Cooling
 cur.execute("""
     SELECT time, value::text::int
     FROM events
     WHERE node_id = 61
       AND property = 'state'
-      AND command_class = 69
+      AND command_class = 66
     ORDER BY time
 """)
 state_rows = cur.fetchall()
