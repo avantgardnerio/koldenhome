@@ -6,7 +6,7 @@ matplotlib.use('GTK3Agg')
 import psycopg2
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from datetime import timedelta
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from astral import LocationInfo
 from astral.sun import sun
@@ -22,6 +22,7 @@ cur.execute("""
     FROM events
     WHERE node_id IN (58, 59, 60, 61, 62)
       AND property = 'Air temperature'
+      AND time > NOW() - INTERVAL '7 days'
     ORDER BY time
 """)
 temp_rows = cur.fetchall()
@@ -33,6 +34,7 @@ cur.execute("""
     WHERE node_id = 61
       AND property = 'state'
       AND command_class = 66
+      AND time > NOW() - INTERVAL '7 days'
     ORDER BY time
 """)
 state_rows = cur.fetchall()
@@ -44,6 +46,7 @@ cur.execute("""
     WHERE node_id = 61
       AND property = 'mode'
       AND command_class = 68
+      AND time > NOW() - INTERVAL '7 days'
     ORDER BY time
 """)
 fan_mode_rows = cur.fetchall()
@@ -216,7 +219,6 @@ all_times = ([t for t, _ in top] + [t for t, _ in basement] +
 if all_times:
     first_day = min(all_times).date()
     last_day = max(all_times).date()
-    from datetime import datetime
     day = first_day - timedelta(days=1)  # start a day early to catch previous night
     last = last_day + timedelta(days=1)
     first_night = True
@@ -242,7 +244,9 @@ else:
 
 # Determine tick interval based on data span
 span_hours = (max(all_times) - min(all_times)).total_seconds() / 3600 if all_times else 24
-if span_hours > 72:
+if span_hours > 120:
+    tick_interval = 12
+elif span_hours > 72:
     tick_interval = 6
 elif span_hours > 36:
     tick_interval = 4
@@ -251,6 +255,8 @@ else:
 
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%M', tz=mtn))
 ax.xaxis.set_major_locator(mdates.HourLocator(interval=tick_interval, tz=mtn))
+now_mtn = datetime.now(mtn)
+ax.set_xlim(now_mtn - timedelta(days=7), now_mtn)
 fig.autofmt_xdate()
 
 plt.tight_layout()
