@@ -20,7 +20,7 @@ cur = conn.cursor()
 cur.execute("""
     SELECT node_id, time, value::text::float
     FROM events
-    WHERE node_id IN (58, 59, 60, 61, 62)
+    WHERE node_id IN (58, 59, 60, 61)
       AND property = 'Air temperature'
       AND time > NOW() - INTERVAL '7 days'
     ORDER BY time
@@ -69,7 +69,6 @@ top = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 58]
 basement = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 59]
 outside = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 60]
 thermostat = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 61]
-brood = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 62]
 states = [(r[0].astimezone(mtn), r[1]) for r in state_rows]
 fan_modes = [(r[0].astimezone(mtn), r[1]) for r in fan_mode_rows]
 
@@ -88,10 +87,6 @@ ax.plot([t for t, _ in thermostat], [v for _, v in thermostat],
 ax.plot([t for t, _ in outside], [v for _, v in outside],
         marker='o', markersize=3, linewidth=2, color='#95a5a6',
         label="Back Porch (Outside)")
-ax.plot([t for t, _ in brood], [v for _, v in brood],
-        marker='o', markersize=3, linewidth=2, color='#f39c12',
-        label="Brood (Basement)")
-
 # Dead band horizontal lines
 ax.axhline(y=heat_below, color='#e74c3c', linestyle='--', linewidth=1, alpha=0.6,
            label=f'Heat below {heat_below:.0f}°F')
@@ -214,8 +209,7 @@ ax.grid(True, alpha=0.3)
 # Midnight and sunrise/sunset vertical lines
 fc = LocationInfo("Fort Collins", "USA", "America/Denver", 40.585, -105.084)
 all_times = ([t for t, _ in top] + [t for t, _ in basement] +
-             [t for t, _ in outside] + [t for t, _ in thermostat] +
-             [t for t, _ in brood])
+             [t for t, _ in outside] + [t for t, _ in thermostat])
 if all_times:
     first_day = min(all_times).date()
     last_day = max(all_times).date()

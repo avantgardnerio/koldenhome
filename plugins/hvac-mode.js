@@ -70,19 +70,21 @@ export default async function hvacMode(manager, config) {
     );
   };
 
+  // DISABLED: circ fan runs almost continuously with current zone spread,
+  // risk of burning out the PSC blower motor. Revisit after insulation work.
   const evaluateZoneSpread = async () => {
-    if (zoneTemps.size < 2) return;
-    const temps = [...zoneTemps.values()];
-    const spread = Math.max(...temps) - Math.min(...temps);
-    const fanMode = getCurrentFanMode();
+    // if (zoneTemps.size < 2) return;
+    // const temps = [...zoneTemps.values()];
+    // const spread = Math.max(...temps) - Math.min(...temps);
+    // const fanMode = getCurrentFanMode();
 
-    if (spread > circ_fan_on && fanMode !== FAN.CIRCULATION) {
-      console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F > ${circ_fan_on}°F — enabling Circulation`);
-      await setFanMode(FAN.CIRCULATION);
-    } else if (spread < circ_fan_off && fanMode === FAN.CIRCULATION) {
-      console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F < ${circ_fan_off}°F — returning to Auto Low`);
-      await setFanMode(FAN.AUTO_LOW);
-    }
+    // if (spread > circ_fan_on && fanMode !== FAN.CIRCULATION) {
+    //   console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F > ${circ_fan_on}°F — enabling Circulation`);
+    //   await setFanMode(FAN.CIRCULATION);
+    // } else if (spread < circ_fan_off && fanMode === FAN.CIRCULATION) {
+    //   console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F < ${circ_fan_off}°F — returning to Auto Low`);
+    //   await setFanMode(FAN.AUTO_LOW);
+    // }
   };
 
   const evaluate = async (temp) => {
