@@ -24,6 +24,7 @@ export function Nav({ path, auth, installPrompt }) {
     <nav class="nav">
       <span class="nav-clock">${time} <span class="nav-version">${getAppVersion()}</span></span>
       <a href="/" class=${path === "/" ? "active" : ""} onClick=${(e) => link(e, "/")}>Dashboard</a>
+      <a href="/battery" class=${path === "/battery" ? "active" : ""} onClick=${(e) => link(e, "/battery")}>Battery</a>
       ${auth.local && html`<a href="/controller" class=${path === "/controller" ? "active" : ""} onClick=${(e) => link(e, "/controller")}>Controller</a>`}
       <span class="nav-spacer" />
       ${installPrompt?.canInstall

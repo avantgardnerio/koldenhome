@@ -1,0 +1,58 @@
+.battery-page h1 {
+  margin-bottom: 1rem;
+}
+
+.battery-empty {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2rem;
+}
+
+.battery-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.battery-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-radius: 8px;
+}
+
+.battery-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.battery-level {
+  font-size: 1.25rem;
+  font-weight: 700;
+  min-width: 4rem;
+  text-align: right;
+}
+
+.battery-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 6rem;
+  justify-content: flex-end;
+}
+
+.battery-low {
+  color: var(--color-red, #f44336);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--color-red, #f44336);
+  border-radius: 4px;
+}
+
+.battery-seen {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
