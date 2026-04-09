@@ -250,7 +250,10 @@ export default (manager) => {
     const node = nodeOrBail(req, res);
     if (!node) return;
     const { value, options, ...valueId } = req.body;
-    const result = await node.setValue(valueId, value, options);
+    const op = node.setValue(valueId, value, options);
+    op.catch((err) => logEvent("node", "set-value-error", { nodeId: node.id, ...valueId, error: err.message }));
+    const timeout = new Promise((resolve) => setTimeout(() => resolve({ status: -1, message: "Queued (device may be asleep)" }), 3000));
+    const result = await Promise.race([op, timeout]);
     res.json(result);
   }));
 
