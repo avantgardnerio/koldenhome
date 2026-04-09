@@ -7,6 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
+import { execSync } from "child_process";
 import { createDriverManager } from "./lib/driver-manager.js";
 import { runMigrations, pool } from "./lib/db.js";
 import { loadAuthConfig, requireAuth, requireLocal } from "./lib/auth.js";
@@ -30,6 +31,7 @@ import pushRoutes from "./routes/push.js";
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
+const GIT_SHA = (() => { try { return execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim(); } catch { return "unknown"; } })();
 const SERIAL_PORT = process.env.SERIAL_PORT || "/dev/ttyUSB0";
 
 // ─── Driver Manager ─────────────────────────────────────────────────────────
@@ -106,7 +108,7 @@ const startServer = async () => {
 
   // ─── Tier 1: requireAuth on all /api/* ────────────────────────────────
 
-  app.use("/api", (_req, res, next) => { res.set("X-Server-Time", new Date().toISOString()); next(); });
+  app.use("/api", (_req, res, next) => { res.set("X-Server-Time", new Date().toISOString()); res.set("X-App-Version", GIT_SHA); next(); });
   app.use("/api", requireAuth);
 
   // ─── Localhost-only Route Groups (Tier 2) ─────────────────────────────

@@ -13,6 +13,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.nav-version {
+  font-size: 0.7rem;
+  opacity: 0.5;
+}
+
 .nav a {
   font-size: 0.9rem;
   color: var(--text-muted);

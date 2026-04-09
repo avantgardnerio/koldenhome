@@ -1,7 +1,7 @@
 import { html } from "htm/preact";
 import { useState, useEffect } from "preact/hooks";
 import { navigate } from "../app.js";
-import { onServerTime, getLastServerTime } from "../api.js";
+import { onServerTime, getLastServerTime, getAppVersion } from "../api.js";
 
 function link(e, path) {
   e.preventDefault();
@@ -22,7 +22,7 @@ export function Nav({ path, auth, installPrompt }) {
   useEffect(() => onServerTime((t) => setTime(fmt(t))), []);
   return html`
     <nav class="nav">
-      <span class="nav-clock">${time}</span>
+      <span class="nav-clock">${time} <span class="nav-version">${getAppVersion()}</span></span>
       <a href="/" class=${path === "/" ? "active" : ""} onClick=${(e) => link(e, "/")}>Dashboard</a>
       ${auth.local && html`<a href="/controller" class=${path === "/controller" ? "active" : ""} onClick=${(e) => link(e, "/controller")}>Controller</a>`}
       <span class="nav-spacer" />

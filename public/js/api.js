@@ -1,8 +1,10 @@
 let lastServerTime = null;
+let appVersion = null;
 const listeners = new Set();
 
 export function onServerTime(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 export function getLastServerTime() { return lastServerTime; }
+export function getAppVersion() { return appVersion; }
 
 async function request(method, path, body) {
   const opts = {
@@ -16,6 +18,7 @@ async function request(method, path, body) {
     lastServerTime = new Date(t);
     listeners.forEach((fn) => fn(lastServerTime));
   }
+  appVersion = res.headers.get("X-App-Version") || appVersion;
   if (res.status === 401) {
     window.dispatchEvent(new CustomEvent("auth", { detail: { status: 401 } }));
     throw new Error("Authentication required");
