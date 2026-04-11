@@ -171,30 +171,38 @@ def find_cooling_segments(pts):
     return segments
 
 
-# --- Step 3: Normalize and stitch ---
-def build_decay_curve(node_id):
-    """Build stitched normalized decay curve from all cooling segments."""
-    pts = node_temps[node_id]
-    segments = find_cooling_segments(pts)
+# --- Step 3: Build segments and ODE solver ---
+def get_segments(node_id):
+    """Get cooling segments for a node."""
+    return find_cooling_segments(node_temps[node_id])
 
-    all_elapsed = []
-    all_normalized = []
 
-    for seg in segments:
-        T0 = seg[0][1]
-        t0 = seg[0][0]
-        T_out = np.mean([get_outside_temp_at(t) for t, _ in seg])
-        denom = T0 - T_out
-        if abs(denom) < 1.0:
-            continue
+def solve_ode_segment(seg, k):
+    """Solve dT/dt = -k(T - T_outside(t)) using exact piecewise-constant solution."""
+    k = float(np.asarray(k).flat[0])
+    predicted = [seg[0][1]]
+    for i in range(1, len(seg)):
+        dt = (seg[i][0] - seg[i-1][0]).total_seconds() / 3600
+        T_out = get_outside_temp_at(seg[i-1][0])
+        T_prev = predicted[-1]
+        T_next = T_out + (T_prev - T_out) * np.exp(-k * dt)
+        predicted.append(T_next)
+    return np.array(predicted, dtype=float)
 
-        for t, v in seg:
-            elapsed_h = (t - t0).total_seconds() / 3600
-            normalized = (v - T_out) / denom
-            all_elapsed.append(elapsed_h)
-            all_normalized.append(normalized)
 
-    return np.array(all_elapsed), np.array(all_normalized), segments
+def fit_ode(segments):
+    """Fit k across all segments by minimizing ODE prediction error."""
+    def residuals(k):
+        err = []
+        for seg in segments:
+            predicted = solve_ode_segment(seg, k)
+            observed = np.array([v for _, v in seg])
+            err.extend(predicted - observed)
+        return np.array(err)
+
+    from scipy.optimize import least_squares
+    result = least_squares(residuals, x0=0.05, bounds=(0, np.inf))
+    return result.x[0]
 
 
 def decay(t, k):
@@ -209,69 +217,69 @@ nodes = [
 
 import matplotlib.dates as mdates
 
-fig, axes = plt.subplots(2, 2, figsize=(14, 10),
-                         height_ratios=[1, 1])
+fig, axes = plt.subplots(3, 2, figsize=(14, 14),
+                         height_ratios=[1, 1, 1])
 
 for col, (node_id, label, color) in enumerate(nodes):
     ax_top = axes[0, col]
     ax_bot = axes[1, col]
-    elapsed, normalized, segments = build_decay_curve(node_id)
+    segments = get_segments(node_id)
 
-    if len(elapsed) < 3:
+    if len(segments) < 1:
         ax_top.set_title(f'{label}\n(insufficient data)', fontsize=12)
         ax_bot.set_visible(False)
         continue
 
-    # Fit
-    try:
-        popt, _ = curve_fit(decay, elapsed, normalized, p0=[0.05],
-                            bounds=(0, np.inf))
-        k = popt[0]
-    except RuntimeError:
-        ax_top.set_title(f'{label}\n(fit failed)', fontsize=12)
-        ax_top.plot(elapsed, normalized, 'o', color=color, markersize=3, alpha=0.5)
-        ax_bot.set_visible(False)
-        continue
-
+    # Fit ODE with variable ambient
+    k = fit_ode(segments)
     tau = 1 / k
     half_life = np.log(2) / k
 
-    # R²
-    y_pred = decay(elapsed, k)
-    ss_res = np.sum((normalized - y_pred) ** 2)
-    ss_tot = np.sum((normalized - np.mean(normalized)) ** 2)
+    # R² across all segments (on raw temps)
+    all_observed = []
+    all_predicted = []
+    for seg in segments:
+        predicted = solve_ode_segment(seg, k)
+        observed = np.array([v for _, v in seg])
+        all_observed.extend(observed)
+        all_predicted.extend(predicted)
+    all_observed = np.array(all_observed)
+    all_predicted = np.array(all_predicted)
+    ss_res = np.sum((all_observed - all_predicted) ** 2)
+    ss_tot = np.sum((all_observed - np.mean(all_observed)) ** 2)
     r_squared = 1 - ss_res / ss_tot if ss_tot > 0 else 0
 
-    # --- Top row: normalized decay curve, color-coded by segment ---
+    # --- Top row: normalized with mean T_out, ODE prediction also normalized ---
     seg_colors = plt.cm.tab10(np.linspace(0, 1, max(len(segments), 1)))
-    offset = 0
     for i, seg in enumerate(segments):
         T0 = seg[0][1]
         t0 = seg[0][0]
-        T_out = np.mean([get_outside_temp_at(t) for t, _ in seg])
-        denom = T0 - T_out
+        T_out_mean = np.mean([get_outside_temp_at(t) for t, _ in seg])
+        denom = T0 - T_out_mean
         if abs(denom) < 1.0:
             continue
-        n = len(seg)
-        ax_top.plot(elapsed[offset:offset+n], normalized[offset:offset+n],
-                    'o', color=seg_colors[i], markersize=3, alpha=0.6,
-                    label=f'Seg {i+1}')
-        offset += n
-    h_fit = np.linspace(0, elapsed.max(), 200)
-    ax_top.plot(h_fit, decay(h_fit, k), '--', color='black', linewidth=2,
-                alpha=0.7, label='Fit')
+        elapsed_h = [(t - t0).total_seconds() / 3600 for t, _ in seg]
+        obs_norm = [(v - T_out_mean) / denom for _, v in seg]
+        predicted = solve_ode_segment(seg, k)
+        pred_norm = [(p - T_out_mean) / denom for p in predicted]
+
+        ax_top.plot(elapsed_h, obs_norm, 'o', color=seg_colors[i],
+                    markersize=3, alpha=0.6, label=f'Seg {i+1}')
+        ax_top.plot(elapsed_h, pred_norm, '-', color=seg_colors[i],
+                    linewidth=1.5, alpha=0.6)
+
     ax_top.set_title(f'{label}', fontsize=13, fontweight='bold')
     ax_top.set_xlabel('Elapsed hours (from segment start)', fontsize=11)
-    ax_top.set_ylabel('(T - T_out) / (T₀ - T_out)', fontsize=11)
+    ax_top.set_ylabel('(T − T̄_out) / (T₀ − T̄_out)', fontsize=11)
     ax_top.grid(True, alpha=0.3)
     ax_top.set_ylim(-0.05, 1.15)
 
     stats = (
+        f'ODE: dT/dt = −k(T−T_out(t))\n'
         f'k = {k:.4f} /hr\n'
         f'τ = {tau:.1f} hrs\n'
         f'Half-life = {half_life:.1f} hrs\n'
         f'R² = {r_squared:.3f}\n'
-        f'T_out mean = {T_outside_mean:.1f}°F\n'
         f'Segments: {len(segments)}'
     )
     ax_top.text(0.97, 0.97, stats, transform=ax_top.transAxes, fontsize=10,
@@ -287,6 +295,19 @@ for col, (node_id, label, color) in enumerate(nodes):
                     markersize=3, linewidth=1, alpha=0.6,
                     label=f'Seg {i+1}')
 
+    # Outside temp — only during segment time ranges
+    if outside_temps and segments:
+        for seg in segments:
+            seg_start = seg[0][0]
+            seg_end = seg[-1][0]
+            out_seg = [(t, v) for t, v in outside_temps
+                       if seg_start <= t <= seg_end]
+            if out_seg:
+                ot = [t.astimezone(mtn) for t, _ in out_seg]
+                ov = [v for _, v in out_seg]
+                ax_bot.plot(ot, ov, '-', color='#3498db', linewidth=1.5,
+                            alpha=0.6, label='Outside' if seg is segments[0] else None)
+
     ax_bot.set_xlabel('Date/Time', fontsize=11)
     ax_bot.set_ylabel('Temperature (°F)', fontsize=11)
     ax_bot.grid(True, alpha=0.3)
@@ -294,6 +315,28 @@ for col, (node_id, label, color) in enumerate(nodes):
     ax_bot.xaxis.set_major_locator(mdates.DayLocator(tz=mtn))
     ax_bot.tick_params(axis='x', rotation=30)
     ax_bot.legend(fontsize=8, loc='upper right', ncol=2)
+
+    # --- Third row: ΔT (inside - mean outside for segment) ---
+    ax_delta = axes[2, col]
+    for i, seg in enumerate(segments):
+        T_out_seg = np.mean([get_outside_temp_at(t) for t, _ in seg])
+        delta_times = []
+        delta_vals = []
+        for t, v in seg:
+            delta_times.append(t.astimezone(mtn))
+            delta_vals.append(v - T_out_seg)
+        ax_delta.plot(delta_times, delta_vals, 'o-', color=seg_colors[i],
+                      markersize=3, linewidth=1, alpha=0.6,
+                      label=f'Seg {i+1}')
+
+    ax_delta.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+    ax_delta.set_xlabel('Date/Time', fontsize=11)
+    ax_delta.set_ylabel('ΔT Inside−Mean Outside (°F)', fontsize=11)
+    ax_delta.grid(True, alpha=0.3)
+    ax_delta.xaxis.set_major_formatter(mdates.DateFormatter('%-m/%d %H:%M', tz=mtn))
+    ax_delta.xaxis.set_major_locator(mdates.DayLocator(tz=mtn))
+    ax_delta.tick_params(axis='x', rotation=30)
+    ax_delta.legend(fontsize=8, loc='upper right', ncol=2)
 
     # Print segment details
     for i, seg in enumerate(segments):
