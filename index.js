@@ -28,6 +28,7 @@ import eventRoutes from "./routes/events.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import pushRoutes from "./routes/push.js";
 import batteryRoutes from "./routes/battery.js";
+import cameraRoutes from "./routes/cameras.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -130,6 +131,7 @@ const startServer = async () => {
   app.use("/api/dashboard", dashboardRoutes(manager));
   app.use("/api/push", pushRoutes());
   app.use("/api/battery", batteryRoutes(manager));
+  app.use("/api/cameras", cameraRoutes());
 
   // ─── SPA Catch-All ────────────────────────────────────────────────────
 

@@ -58,6 +58,28 @@ export default () => {
    *       302:
    *         description: Redirect to Google
    */
+  /**
+   * @openapi
+   * /auth/check:
+   *   get:
+   *     tags: [Auth]
+   *     summary: Bare auth check for Caddy forward_auth (200 or 401)
+   *     responses:
+   *       200:
+   *         description: Authenticated
+   *       401:
+   *         description: Not authenticated
+   */
+  router.get("/check", asyncHandler(async (req, res) => {
+    if (req.session?.userId) {
+      const user = await findUserById(req.session.userId);
+      if (user && (user.role === "user" || user.role === "admin")) {
+        return res.status(200).end();
+      }
+    }
+    res.status(401).end();
+  }));
+
   router.get("/google", (req, res) => {
     const config = getAuthConfig();
     const client = getOAuth2Client();

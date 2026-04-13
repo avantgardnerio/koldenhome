@@ -1,0 +1,41 @@
+.camera-page {
+  padding: 1rem;
+}
+
+.camera-back {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.camera-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.camera-item {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 1.1rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.camera-item:hover {
+  background: var(--surface-hover, var(--surface));
+}
+
+.camera-video {
+  width: 100%;
+  max-width: 100%;
+  background: #000;
+  border-radius: 8px;
+}

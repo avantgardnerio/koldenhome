@@ -7,6 +7,7 @@ import { Dashboard } from "./pages/dashboard.js";
 import { Controller } from "./pages/controller.js";
 import { NodeDetail } from "./pages/node.js";
 import { Battery } from "./pages/battery.js";
+import { Camera } from "./pages/camera.js";
 
 // PWA install prompt
 let deferredPrompt = null;
@@ -19,6 +20,7 @@ window.addEventListener("beforeinstallprompt", (e) => {
 const routes = [
   { pattern: /^\/nodes\/(\d+)$/, component: NodeDetail, params: (m) => ({ id: m[1] }) },
   { pattern: /^\/battery$/, component: Battery },
+  { pattern: /^\/cameras$/, component: Camera },
   { pattern: /^\/controller$/, component: Controller },
   { pattern: /^\/$/, component: Dashboard },
 ];

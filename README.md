@@ -181,14 +181,25 @@ your.domain.example {
 
 	# Only allow known paths — everything else gets 403
 	@allowed {
-		path / /controller /login /nodes/*
+		path / /battery /cameras /controller /login /nodes/*
 		path /api/*
+		path /cam/*
 		path /manifest.json /sw.js
 		path /css/* /js/* /icon-*.png
 		path /node_modules/preact/dist/preact.mjs
 		path /node_modules/preact/hooks/dist/hooks.mjs
 		path /node_modules/htm/dist/htm.mjs
 		path /node_modules/htm/preact/index.mjs
+	}
+
+	# Camera stream proxy — auth-gated via Express session
+	handle /cam/* {
+		forward_auth localhost:3000 {
+			uri /api/auth/check
+			copy_headers Cookie
+		}
+		uri strip_prefix /cam
+		reverse_proxy localhost:8084
 	}
 
 	handle @allowed {
@@ -224,3 +235,114 @@ sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl daemon-reload
 sudo systemctl reload caddy
 ```
+
+## Cameras (go2rtc)
+
+RTSP-capable cameras are proxied through [go2rtc](https://github.com/AlexxIT/go2rtc), which converts
+RTSP to browser-friendly MP4/WebRTC/HLS. The Express app serves a Cameras page that lists enabled
+entries from the `cameras` table and plays the stream on click.
+
+### Install go2rtc
+
+```bash
+sudo curl -sL "https://github.com/AlexxIT/go2rtc/releases/latest/download/go2rtc_linux_amd64" \
+  -o /usr/local/bin/go2rtc
+sudo chmod 0755 /usr/local/bin/go2rtc
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin go2rtc
+sudo mkdir -p /etc/go2rtc
+```
+
+Create `/etc/go2rtc/go2rtc.yaml` (must be readable by the `go2rtc` user):
+
+```yaml
+streams:
+  # Key here must match cameras.stream_id in the DB
+  frontdoor: rtsp://admin:@192.168.0.3:554/h264Preview_01_sub
+
+api:
+  listen: ":8084"    # LAN-accessible so phones on WiFi can hit it directly
+
+webrtc:
+  listen: ":8555"
+```
+
+```bash
+sudo chown go2rtc:go2rtc /etc/go2rtc/go2rtc.yaml
+sudo chmod 0640 /etc/go2rtc/go2rtc.yaml
+```
+
+Create `/etc/systemd/system/go2rtc.service`:
+
+```ini
+[Unit]
+Description=go2rtc streaming server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=go2rtc
+Group=go2rtc
+ExecStart=/usr/local/bin/go2rtc -config /etc/go2rtc/go2rtc.yaml
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+# NOTE: do NOT set MemoryDenyWriteExecute=true — it breaks Go's runtime
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now go2rtc
+```
+
+### Register a camera
+
+```sql
+INSERT INTO cameras (stream_id, name) VALUES ('frontdoor', 'Front Door');
+```
+
+The `stream_id` must match the key in `/etc/go2rtc/go2rtc.yaml`. After editing go2rtc config:
+
+```bash
+sudo systemctl restart go2rtc
+```
+
+### Access control
+
+- **LAN (direct to Express on :3000)**: the Cameras page plays streams from
+  `http://<host>:8084/api/stream.mp4?src=<streamId>` — no auth, LAN-scoped by port
+- **WAN (via Caddy)**: the page uses `/cam/api/stream.mp4?src=<streamId>`, which Caddy
+  gates behind `forward_auth` → Express `/api/auth/check` → go2rtc on :8084
+
+Port 8084 should be bound to all interfaces on a trusted LAN only. If your LAN is not trusted,
+bind go2rtc to 127.0.0.1 and route all traffic through Caddy.
+
+### Reolink camera activation (one-time, if needed)
+
+Reolink cameras ship with RTSP/HTTP/ONVIF disabled — only the proprietary Baichuan protocol on
+port 9000 works out of the box. To enable RTSP without installing the Reolink app, use
+[neolink](https://github.com/QuantumEntangledAndy/neolink) once:
+
+```bash
+cargo install --git https://github.com/QuantumEntangledAndy/neolink neolink
+# write a temporary neolink.toml with camera uid/address
+neolink services <name> rtsp on
+```
+
+After RTSP is on, neolink is no longer needed — delete the temp config (contains credentials).
