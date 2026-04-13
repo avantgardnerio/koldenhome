@@ -16,17 +16,24 @@ function signalingUrl(streamId) {
 }
 
 function CameraStream({ streamId }) {
-  const ref = useRef(null);
+  // LAN (direct to Express :3000): use video-rtc for low-latency WebRTC/MSE.
+  // WAN (through Caddy): use a plain <video> pointed at go2rtc's HTTP MP4
+  // endpoint. Higher latency (~5-8s) but rock stable across hairpin NAT,
+  // variable WiFi, and on mobile browsers where MSE tends to stall.
+  const isLanDirect = location.port === "3000";
+  const rtcRef = useRef(null);
+
   useEffect(() => {
-    if (!ref.current) return;
-    ref.current.src = signalingUrl(streamId);
-    // LAN (direct to Express :3000): low-latency WebRTC/MSE.
-    // WAN (through Caddy): MP4 is slower (~3-5s) but stable across hairpin NAT,
-    // variable WiFi, and long proxy chains where MSE tends to stall.
-    const isLanDirect = location.port === "3000";
-    ref.current.mode = isLanDirect ? "webrtc,mse,mp4" : "mp4";
-  }, [streamId]);
-  return html`<video-rtc ref=${ref} class="camera-video"></video-rtc>`;
+    if (!isLanDirect || !rtcRef.current) return;
+    rtcRef.current.src = signalingUrl(streamId);
+    rtcRef.current.mode = "webrtc,mse,mp4";
+  }, [streamId, isLanDirect]);
+
+  if (isLanDirect) {
+    return html`<video-rtc ref=${rtcRef} class="camera-video"></video-rtc>`;
+  }
+  const mp4Src = `/cam/api/stream.mp4?src=${encodeURIComponent(streamId)}`;
+  return html`<video class="camera-video" src=${mp4Src} autoplay muted playsinline controls></video>`;
 }
 
 export function Camera() {
