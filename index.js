@@ -4,6 +4,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
@@ -133,6 +134,18 @@ const startServer = async () => {
   app.use("/api/battery", batteryRoutes(manager));
   app.use("/api/cameras", cameraRoutes());
 
+  // ─── Camera Stream Proxy (go2rtc) ─────────────────────────────────────
+  // /cam/* → go2rtc on :8084, supports WebSocket upgrade for WebRTC/MSE.
+  // Auth is enforced: requireAuth (localhost passthrough or valid session).
+  const camProxy = createProxyMiddleware({
+    target: "http://127.0.0.1:8084",
+    changeOrigin: true,
+    ws: true,
+    pathRewrite: { "^/cam": "" },
+    logLevel: "warn",
+  });
+  app.use("/cam", requireAuth, camProxy);
+
   // ─── SPA Catch-All ────────────────────────────────────────────────────
 
   app.get("/{*path}", (_req, res) => {
@@ -150,10 +163,14 @@ const startServer = async () => {
 
   await manager.start();
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`KoldenHome Z-Wave API listening on http://localhost:${PORT}`);
     console.log(`Swagger UI at http://localhost:${PORT}/docs`);
     console.log(`OpenAPI spec at http://localhost:${PORT}/openapi.json`);
+  });
+  // Forward WebSocket upgrades for /cam/* to go2rtc
+  server.on("upgrade", (req, socket, head) => {
+    if (req.url?.startsWith("/cam")) camProxy.upgrade(req, socket, head);
   });
 };
 

@@ -192,16 +192,6 @@ your.domain.example {
 		path /node_modules/htm/preact/index.mjs
 	}
 
-	# Camera stream proxy — auth-gated via Express session
-	handle /cam/* {
-		forward_auth localhost:3000 {
-			uri /api/auth/check
-			copy_headers Cookie
-		}
-		uri strip_prefix /cam
-		reverse_proxy localhost:8084
-	}
-
 	handle @allowed {
 		reverse_proxy localhost:3000
 	}
@@ -260,7 +250,8 @@ streams:
   frontdoor: rtsp://admin:@192.168.0.3:554/h264Preview_01_sub
 
 api:
-  listen: ":8084"    # LAN-accessible so phones on WiFi can hit it directly
+  listen: "127.0.0.1:8084"   # Express proxies /cam/* → go2rtc
+  origin: "*"                 # Accept any Origin (Express sits in front)
 
 webrtc:
   listen: ":8555"
@@ -325,13 +316,10 @@ sudo systemctl restart go2rtc
 
 ### Access control
 
-- **LAN (direct to Express on :3000)**: the Cameras page plays streams from
-  `http://<host>:8084/api/stream.mp4?src=<streamId>` — no auth, LAN-scoped by port
-- **WAN (via Caddy)**: the page uses `/cam/api/stream.mp4?src=<streamId>`, which Caddy
-  gates behind `forward_auth` → Express `/api/auth/check` → go2rtc on :8084
-
-Port 8084 should be bound to all interfaces on a trusted LAN only. If your LAN is not trusted,
-bind go2rtc to 127.0.0.1 and route all traffic through Caddy.
+The PWA always hits `/cam/*` on Express, which proxies (HTTP + WebSocket) to go2rtc on
+`127.0.0.1:8084` behind `requireAuth`. Works identically on LAN (direct to Express :3000)
+and WAN (through Caddy → Express). go2rtc can be bound to 127.0.0.1 only since nothing
+else talks to it directly.
 
 ### Reolink camera activation (one-time, if needed)
 

@@ -34,8 +34,16 @@
 }
 
 .camera-video {
+  display: block;
   width: 100%;
   max-width: 100%;
   background: #000;
+  border-radius: 8px;
+}
+
+.camera-video video {
+  width: 100%;
+  height: auto;
+  display: block;
   border-radius: 8px;
 }
