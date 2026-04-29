@@ -1,0 +1,46 @@
+ISU,Value,Label,Description
+1,2,5-2 schedule,Schedule Type
+2,0,Fahrenheit,Temperature Scale
+3,0,Disable,Outdoor Temperature Sensor
+4,2,Heat Pump,Equipment Type
+5,0,O/B on Cool,Reversing Valve
+6,2,,Cool Stages
+7,2,,Heat Stages
+8,0,Both auxiliary and emergency,Auxiliary/Emergency Control
+9,1,Gas/Oil,Auxiliary Heat Type
+10,1,Gas/Oil,Emergency Heat Type
+11,0,Thermostat,Fossil Kit Control
+12,1,Enable,Auto Changeover
+13,3,,Auto Differential
+14,0,Disable,High Cool Stage Finish
+15,0,Disable,High Heat Stage Finish
+16,0,Comfort,Auxiliary Heat Droop
+17,0,Off,Up Stage Timer Aux Heat
+18,0,Disable,Balance Point
+19,0,Disable,Aux Heat Outdoor Lockout
+20,3,,Cool Stage 1 Cycle Rate
+21,3,,Cool Stage 2 Cycle Rate
+22,3,,Heat Stage 1 Cycle Rate
+23,3,,Heat Stage 2 Cycle Rate
+24,9,,Aux Heat Cycle Rate
+25,9,,Emergency Heat Cycle Rate
+26,5,,Compressor Protection
+27,1,Enable,Adaptive Intelligent Recovery
+28,50,,Minimum Cool Temperature
+29,90,,Maximum Heat Temperature
+30,0,,Air Filters
+31,0,Disable,Air Filter 1 Reminder
+32,0,Disable,Air Filter 2 Reminder
+33,0,Disable,Humidification Pad Reminder
+34,0,Disable,Dehumidification Filter Reminder
+35,0,Disable,Ventilation Filter Reminder
+36,0,,UV Devices
+37,0,Disable,UV Bulb 1 Reminder
+38,0,Disable,UV Bulb 2 Reminder
+39,0,,Idle Brightness
+40,1,24 hour,Clock Format
+41,1,Enable,Daylight Saving
+42,0,Off,Temperature Offset
+43,0,,Humidity Offset
+44,0,0.5 °F / 0.5 °C,Temperature Resolution
+45,1,,Humidity Resolution

@@ -1,0 +1,11 @@
+ISU,Current Value,Current Label,Target Value,Target Label,Description,Action
+4,1,Standard Gas,2,Heat Pump,Equipment Type,CHANGE
+5,0,O/B on Cool,0,O/B on Cool,Reversing Valve,OK
+6,1,,2,,Cool Stages,CHANGE
+7,2,,2,,Heat Stages,OK
+8,0,Both auxiliary and emergency,0,Both auxiliary and emergency,Auxiliary/Emergency Control,OK
+9,0,Electric,1,Gas/Oil,Auxiliary Heat Type,CHANGE
+10,0,Electric,1,Gas/Oil,Emergency Heat Type,CHANGE
+11,0,Thermostat,0,Thermostat,Fossil Kit Control,OK
+18,0,Disable,0,Disable,Balance Point (plugin owns this),OK
+19,0,Disable,0,Disable,Aux Heat Outdoor Lockout (plugin owns this),OK
