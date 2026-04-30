@@ -9,11 +9,12 @@ export default async function hvacMode(manager, config) {
   const {
     sensor_node_id, thermostat_node_id, heat_below, cool_above,
     zone_sensors = [], circ_fan_on, circ_fan_off,
+    outdoor_sensor_id, balance_point = 40, balance_point_hysteresis = 3,
   } = config;
 
   const zoneTemps = new Map();
 
-  const MODES = { OFF: 0, HEAT: 1, COOL: 2 };
+  const MODES = { OFF: 0, HEAT: 1, COOL: 2, AUX_HEAT: 4 };
 
   const getCurrentMode = () => {
     try {
@@ -87,6 +88,35 @@ export default async function hvacMode(manager, config) {
     // }
   };
 
+  const getOutdoorTemp = () => {
+    if (!outdoor_sensor_id) return null;
+    try {
+      const node = manager.getDriver().controller.nodes.get(outdoor_sensor_id);
+      if (!node) return null;
+      return node.getValue({
+        commandClass: CC_MULTILEVEL_SENSOR,
+        property: "Air temperature",
+      });
+    } catch { return null; }
+  };
+
+  const pickHeatingMode = (currentMode) => {
+    const outdoorTemp = getOutdoorTemp();
+    if (outdoorTemp == null) return MODES.HEAT;
+
+    if (currentMode === MODES.AUX_HEAT && outdoorTemp > balance_point + balance_point_hysteresis) {
+      console.log(`[hvac-mode] outdoor ${outdoorTemp}°F > ${balance_point + balance_point_hysteresis}°F — switching furnace → HP`);
+      return MODES.HEAT;
+    }
+    if (outdoorTemp < balance_point) {
+      if (currentMode !== MODES.AUX_HEAT) {
+        console.log(`[hvac-mode] outdoor ${outdoorTemp}°F < ${balance_point}°F — switching HP → furnace`);
+      }
+      return MODES.AUX_HEAT;
+    }
+    return currentMode === MODES.AUX_HEAT ? MODES.AUX_HEAT : MODES.HEAT;
+  };
+
   const evaluate = async (temp) => {
     if (temp == null) {
       console.warn("[hvac-mode] evaluate called with null temp, skipping");
@@ -95,14 +125,24 @@ export default async function hvacMode(manager, config) {
 
     const currentMode = getCurrentMode();
 
-    if (temp < heat_below && currentMode !== MODES.HEAT) {
-      console.log(`[hvac-mode] ${temp}°F < ${heat_below}°F — switching to Heat`);
-      await setMode(MODES.HEAT);
+    if (temp < heat_below) {
+      const desiredMode = pickHeatingMode(currentMode);
+      if (currentMode !== desiredMode) {
+        const label = desiredMode === MODES.AUX_HEAT ? "Aux Heat (furnace)" : "Heat (HP)";
+        console.log(`[hvac-mode] ${temp}°F < ${heat_below}°F — switching to ${label} (outdoor: ${getOutdoorTemp() ?? "unknown"}°F)`);
+        await setMode(desiredMode);
+      }
     } else if (temp > cool_above && currentMode !== MODES.COOL) {
       console.log(`[hvac-mode] ${temp}°F > ${cool_above}°F — switching to Cool`);
       await setMode(MODES.COOL);
     }
   };
+
+  // Log outdoor temp on startup
+  if (outdoor_sensor_id) {
+    const outdoorTemp = getOutdoorTemp();
+    console.log(`[hvac-mode] init: outdoor sensor ${outdoor_sensor_id} reads ${outdoorTemp ?? "unknown"}°F (balance point: ${balance_point}°F ±${balance_point_hysteresis}°F)`);
+  }
 
   // Sync mode on startup from current sensor reading
   try {
@@ -152,6 +192,17 @@ export default async function hvacMode(manager, config) {
 
       if (node.id === sensor_node_id) {
         await evaluate(temp);
+      }
+
+      if (node.id === outdoor_sensor_id) {
+        console.log(`[hvac-mode] outdoor temp update: ${temp}°F`);
+        // Re-evaluate with cached indoor temp
+        const sensorNode = manager.getDriver().controller.nodes.get(sensor_node_id);
+        const indoorTemp = sensorNode?.getValue({
+          commandClass: CC_MULTILEVEL_SENSOR,
+          property: "Air temperature",
+        });
+        await evaluate(indoorTemp);
       }
 
       if (zone_sensors.includes(node.id)) {

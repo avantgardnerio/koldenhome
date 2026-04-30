@@ -1,0 +1,309 @@
+<Product Revision="4" xmlns="https://github.com/OpenZWave/open-zwave">
+  <!-- Source: https://github.com/OpenZWave/open-zwave/blob/master/config/honeywell/th6320zw2003.xml -->
+  <MetaData>
+    <MetaDataItem name="OzwInfoPage">http://www.openzwave.com/device-database/0039:0008:0011</MetaDataItem>
+    <MetaDataItem name="ProductPic">images/honeywell/th6320zw2003.png</MetaDataItem>
+    <MetaDataItem id="0008" name="ZWProductPage" type="0011">https://products.z-wavealliance.org/products/2893/</MetaDataItem>
+    <MetaDataItem name="Name">T6 Pro Z-Wave Programmable Thermostat</MetaDataItem>
+    <MetaDataItem id="0008" name="FrequencyName" type="0011">U.S. / Canada / Mexico</MetaDataItem>
+    <MetaDataItem id="0008" name="Identifier" type="0011">TH6320ZW2003</MetaDataItem>
+  </MetaData>
+  <CommandClass id="67">
+    <Compatibility>
+      <Base>0</Base>
+      <OverridePrecision>2</OverridePrecision>
+    </Compatibility>
+  </CommandClass>
+  <CommandClass id="112">
+    <Value genre="config" index="1" label="Schedule Type" max="4" min="0" size="1" type="list" units="" value="2">
+      <Help>Schedule Type (ISU 120)</Help>
+      <Item label="No schedule/Occupancy based schedule" value="0"/>
+      <Item label="Every day the same" value="1"/>
+      <Item label="5-2 Schedule" value="2"/>
+      <Item label="5-1-1 Schedule" value="3"/>
+      <Item label="Every day individual" value="4"/>
+    </Value>
+    <Value genre="config" index="2" label="Temperature Scale" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>Temperature Scale (ISU 125)</Help>
+      <Item label="Fahrenheit" value="0"/>
+      <Item label="Celsius" value="1"/>
+    </Value>
+    <Value genre="config" index="3" label="Outdoor Temperature" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>Outdoor Temperature Sensor (ISU 130)</Help>
+      <Item label="No" value="0"/>
+      <Item label="Wired" value="1"/>
+    </Value>
+    <Value genre="config" index="4" label="Equipment Type" max="9" min="0" size="1" type="list" units="" value="2">
+      <Help>Equipment Type - combines ISU 200 (System Type) + ISU 205 (Equipment Type)</Help>
+      <Item label="None" value="0"/>
+      <Item label="Standard Gas" value="1"/>
+      <Item label="High Efficiency Gas" value="2"/>
+      <Item label="Oil" value="3"/>
+      <Item label="Electric" value="4"/>
+      <Item label="Fan Coil" value="5"/>
+      <Item label="Air to Air Heat pump" value="6"/>
+      <Item label="Geothermal Heat Pump" value="7"/>
+      <Item label="Hot Water" value="8"/>
+      <Item label="Steam" value="9"/>
+    </Value>
+    <Value genre="config" index="5" label="Reversing Valve" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>Reversing Valve (ISU 218)</Help>
+      <Item label="O/B on Cool" value="0"/>
+      <Item label="O/B on Heat" value="1"/>
+    </Value>
+    <Value genre="config" index="6" label="Cool Stages" max="2" min="0" size="1" type="byte" units="" value="1">
+      <Help>Cool Stages (ISU 220)</Help>
+    </Value>
+    <Value genre="config" index="7" label="Heat Stages Auxiliary/Emergency stages" max="2" min="0" size="1" type="byte" units="" value="1">
+      <Help>Heat/Aux/Emergency Stages (ISU 221)</Help>
+    </Value>
+    <Value genre="config" index="8" label="Auxiliary/Emergency Control" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>Aux/Emergency Control (ISU 253)</Help>
+      <Item label="Both Aux and E" value="0"/>
+      <Item label="Either Aux/E" value="1"/>
+    </Value>
+    <Value genre="config" index="9" label="Auxiliary Heat Type" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>Auxiliary Heat Type (ISU 255)</Help>
+      <Item label="Electric" value="0"/>
+      <Item label="Gas/Oil" value="1"/>
+    </Value>
+    <Value genre="config" index="10" label="Emergency Heat Type" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>Emergency Heat Type (ISU 256)</Help>
+      <Item label="Electric" value="0"/>
+      <Item label="Gas/Oil" value="1"/>
+    </Value>
+    <Value genre="config" index="11" label="Fossil Kit Control" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>Fossil Kit Control (ISU 260)</Help>
+      <Item label="Thermostat" value="0"/>
+      <Item label="External" value="1"/>
+    </Value>
+    <Value genre="config" index="12" label="Auto Changeover" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>Auto Changeover (ISU 300)</Help>
+      <Item label="Off" value="0"/>
+      <Item label="On" value="1"/>
+    </Value>
+    <Value genre="config" index="13" label="Auto Differential" max="5" min="0" size="1" type="byte" units="F" value="0">
+      <Help>Auto Differential in degrees Fahrenheit (ISU 303)</Help>
+    </Value>
+    <Value genre="config" index="14" label="High Cool Stage Finish" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>High Cool Stage Finish (ISU 305)</Help>
+      <Item label="No" value="0"/>
+      <Item label="Yes" value="1"/>
+    </Value>
+    <Value genre="config" index="15" label="High Heat Stage Finish" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>High Heat Stage Finish (ISU 306)</Help>
+      <Item label="No" value="0"/>
+      <Item label="Yes" value="1"/>
+    </Value>
+    <Value genre="config" index="16" label="Auxiliary Heat Droop" max="15" min="0" size="1" type="list" units="F" value="0">
+      <Help>Aux Heat Droop (ISU 340). 0=Comfort, 2-15 degrees F from setpoint</Help>
+      <Item label="Comfort" value="0"/>
+      <Item label="2F" value="2"/>
+      <Item label="3F" value="3"/>
+      <Item label="4F" value="4"/>
+      <Item label="5F" value="5"/>
+      <Item label="6F" value="6"/>
+      <Item label="7F" value="7"/>
+      <Item label="8F" value="8"/>
+      <Item label="9F" value="9"/>
+      <Item label="10F" value="10"/>
+      <Item label="11F" value="11"/>
+      <Item label="12F" value="12"/>
+      <Item label="13F" value="13"/>
+      <Item label="14F" value="14"/>
+      <Item label="15F" value="15"/>
+    </Value>
+    <Value genre="config" index="17" label="Up Stage Timer Aux Heat" max="15" min="0" size="1" type="list" units="" value="0">
+      <Help>Up Stage Timer Auxiliary Heat (ISU 350)</Help>
+      <Item label="Off" value="0"/>
+      <Item label="30 minutes" value="1"/>
+      <Item label="45 minutes" value="2"/>
+      <Item label="60 minutes" value="3"/>
+      <Item label="75 minutes" value="4"/>
+      <Item label="90 minutes" value="5"/>
+      <Item label="2 hours" value="6"/>
+      <Item label="3 hours" value="7"/>
+      <Item label="4 hours" value="8"/>
+      <Item label="5 hours" value="9"/>
+      <Item label="6 hours" value="10"/>
+      <Item label="8 hours" value="11"/>
+      <Item label="10 hours" value="12"/>
+      <Item label="12 hours" value="13"/>
+      <Item label="14 hours" value="14"/>
+      <Item label="16 hours" value="15"/>
+    </Value>
+    <Value genre="config" index="18" label="Balance Point (Compressor Lockout)" max="65" min="0" size="1" type="list" units="" value="65">
+      <Help>Balance Point / Compressor Lockout (ISU 355). 0=Off, 5-65F in 5F increments</Help>
+      <Item label="Balance Point Off" value="0"/>
+      <Item label="Balance Point 5 degrees Fahrenheit" value="5"/>
+      <Item label="Balance Point 10 degrees Fahrenheit" value="10"/>
+      <Item label="Balance Point 15 degrees Fahrenheit" value="15"/>
+      <Item label="Balance Point 20 degrees Fahrenheit" value="20"/>
+      <Item label="Balance Point 25 degrees Fahrenheit" value="25"/>
+      <Item label="Balance Point 30 degrees Fahrenheit" value="30"/>
+      <Item label="Balance Point 35 degrees Fahrenheit" value="35"/>
+      <Item label="Balance Point 40 degrees Fahrenheit" value="40"/>
+      <Item label="Balance Point 55 degrees Fahrenheit" value="55"/>
+      <Item label="Balance Point 60 degrees Fahrenheit" value="60"/>
+      <Item label="Balance Point 65 degrees Fahrenheit" value="65"/>
+    </Value>
+    <Value genre="config" index="19" label="Aux Heat Lock Out (Aux Heat Outdoor Lockout)" max="65" min="0" size="1" type="list" units="" value="0">
+      <Help>Aux Heat Outdoor Lockout (ISU 356). 0=Off, 5-65F in 5F increments</Help>
+      <Item label="Aux Heat Lockout Off" value="0"/>
+      <Item label="Aux Heat Lockout 5 degrees Fahrenheit" value="5"/>
+      <Item label="Aux Heat Lockout 10 degrees Fahrenheit" value="10"/>
+      <Item label="Aux Heat Lockout 15 degrees Fahrenheit" value="15"/>
+      <Item label="Aux Heat Lockout 20 degrees Fahrenheit" value="20"/>
+      <Item label="Aux Heat Lockout 25 degrees Fahrenheit" value="25"/>
+      <Item label="Aux Heat Lockout 30 degrees Fahrenheit" value="30"/>
+      <Item label="Aux Heat Lockout 35 degrees Fahrenheit" value="35"/>
+      <Item label="Aux Heat Lockout 40 degrees Fahrenheit" value="40"/>
+      <Item label="Aux Heat Lockout 55 degrees Fahrenheit" value="55"/>
+      <Item label="Aux Heat Lockout 60 degrees Fahrenheit" value="60"/>
+      <Item label="Aux Heat Lockout 65 degrees Fahrenheit" value="65"/>
+    </Value>
+    <Value genre="config" index="20" label="Cool 1 CPH" max="6" min="1" size="1" type="byte" units="" value="3">
+      <Help>Cooling cycle rate stage 1 (ISU 365)</Help>
+    </Value>
+    <Value genre="config" index="21" label="Cool 2 CPH" max="6" min="1" size="1" type="byte" units="" value="3">
+      <Help>Cooling cycle rate stage 2 (ISU 366)</Help>
+    </Value>
+    <Value genre="config" index="22" label="Heat 1 CPH" max="12" min="1" size="1" type="byte" units="" value="3">
+      <Help>Heating cycle rate stage 1 (ISU 370)</Help>
+    </Value>
+    <Value genre="config" index="23" label="Heat 2 CPH" max="12" min="1" size="1" type="byte" units="" value="3">
+      <Help>Heating cycle rate stage 2 (ISU 371)</Help>
+    </Value>
+    <Value genre="config" index="24" label="Aux Heat CPH" max="12" min="1" size="1" type="byte" units="" value="9">
+      <Help>Heating cycle rate Auxiliary Heat (ISU 375)</Help>
+    </Value>
+    <Value genre="config" index="25" label="EM Heat CPH" max="12" min="1" size="1" type="byte" units="" value="9">
+      <Help>Heating cycle rate Emergency Heat (ISU 378)</Help>
+    </Value>
+    <Value genre="config" index="26" label="Compressor Protection" max="5" min="0" size="1" type="byte" units="" value="5">
+      <Help>Compressor Protection timer in minutes (ISU 387). 0=Off</Help>
+    </Value>
+    <Value genre="config" index="27" label="Adaptive Intelligent Recovery" max="1" min="0" size="1" type="list" units="" value="1">
+      <Help>Adaptive Intelligent Recovery (ISU 425)</Help>
+      <Item label="Off" value="0"/>
+      <Item label="On" value="1"/>
+    </Value>
+    <Value genre="config" index="28" label="Minimum Cool Temperature" max="99" min="50" size="1" type="byte" units="F" value="50">
+      <Help>Minimum Cool Temperature in Fahrenheit (ISU 430)</Help>
+    </Value>
+    <Value genre="config" index="29" label="Maximum Heat Temperature" max="90" min="40" size="1" type="byte" units="F" value="90">
+      <Help>Maximum Heat Temperature in Fahrenheit (ISU 431)</Help>
+    </Value>
+    <Value genre="config" index="30" label="Air Filters" max="2" min="0" size="1" type="byte" units="" value="0">
+      <Help>Number of air filters (ISU 702)</Help>
+    </Value>
+    <Value genre="config" index="31" label="Air Filter 1 Reminder" max="19" min="0" size="1" type="list" units="" value="0">
+      <Help>Air Filter 1 Reminder (ISU 711)</Help>
+      <Item label="Off" value="0"/>
+      <Item label="10 Run time Days" value="1"/>
+      <Item label="20 Run time Days" value="2"/>
+      <Item label="30 Run time Days" value="3"/>
+      <Item label="45 Run time Days" value="4"/>
+      <Item label="60 Run time Days" value="5"/>
+      <Item label="90 Run time Days" value="6"/>
+      <Item label="120 Run time Days" value="7"/>
+      <Item label="150 Run time Days" value="8"/>
+      <Item label="30 Days" value="9"/>
+      <Item label="45 Days" value="10"/>
+      <Item label="60 Days" value="11"/>
+      <Item label="75 Days" value="12"/>
+      <Item label="3 Months" value="13"/>
+      <Item label="4 Months" value="14"/>
+      <Item label="5 Months" value="15"/>
+      <Item label="6 Months" value="16"/>
+      <Item label="9 Months" value="17"/>
+      <Item label="12 Months" value="18"/>
+      <Item label="15 Months" value="19"/>
+    </Value>
+    <Value genre="config" index="32" label="Air Filter 2 Reminder" max="19" min="0" size="1" type="list" units="" value="0">
+      <Help>Air Filter 2 Reminder (ISU 712)</Help>
+      <Item label="Off" value="0"/>
+      <Item label="10 Run time Days" value="1"/>
+      <Item label="20 Run time Days" value="2"/>
+      <Item label="30 Run time Days" value="3"/>
+      <Item label="45 Run time Days" value="4"/>
+      <Item label="60 Run time Days" value="5"/>
+      <Item label="90 Run time Days" value="6"/>
+      <Item label="120 Run time Days" value="7"/>
+      <Item label="150 Run time Days" value="8"/>
+      <Item label="30 Days" value="9"/>
+      <Item label="45 Days" value="10"/>
+      <Item label="60 Days" value="11"/>
+      <Item label="75 Days" value="12"/>
+      <Item label="3 Months" value="13"/>
+      <Item label="4 Months" value="14"/>
+      <Item label="5 Months" value="15"/>
+      <Item label="6 Months" value="16"/>
+      <Item label="9 Months" value="17"/>
+      <Item label="12 Months" value="18"/>
+      <Item label="15 Months" value="19"/>
+    </Value>
+    <Value genre="config" index="33" label="Humidification Pad Reminder" max="2" min="0" size="1" type="list" units="" value="0">
+      <Help>Humidification Pad Reminder (ISU 810)</Help>
+      <Item label="Off" value="0"/>
+      <Item label="6 Calendar Months" value="1"/>
+      <Item label="12 Calendar Months" value="2"/>
+    </Value>
+    <Value genre="config" index="34" label="Dehumidification Filter Reminder" max="12" min="0" size="1" type="byte" units="" value="0">
+      <Help>0=Off, 1-12 Calendar Months (ISU 921)</Help>
+    </Value>
+    <Value genre="config" index="35" label="Ventilation Filter Reminder" max="12" min="0" size="1" type="list" units="" value="0">
+      <Help>Ventilation Filter Reminder (ISU 1018)</Help>
+      <Item label="No Ventilation Filter Reminder" value="0"/>
+      <Item label="Reminder in 3 Months" value="3"/>
+      <Item label="Reminder in 6 Months" value="6"/>
+      <Item label="Reminder in 9 Months" value="9"/>
+      <Item label="Reminder in 12 Months" value="12"/>
+    </Value>
+    <Value genre="config" index="36" label="UV Devices" max="2" min="0" size="1" type="byte" units="" value="0">
+      <Help>UV Devices (ISU 1100)</Help>
+    </Value>
+    <Value genre="config" index="37" label="UV Bulb 1 Reminder" max="24" min="0" size="1" type="list" units="" value="0">
+      <Help>UV Bulb 1 Reminder (ISU 1105)</Help>
+      <Item label="UV Bulb 1 Reminder Off" value="0"/>
+      <Item label="Reminder in 6 Months" value="6"/>
+      <Item label="Reminder in 12 Months" value="12"/>
+      <Item label="Reminder in 24 Months" value="24"/>
+    </Value>
+    <Value genre="config" index="38" label="UV Bulb 2 Reminder" max="24" min="0" size="1" type="list" units="" value="0">
+      <Help>UV Bulb 2 Reminder (ISU 1106)</Help>
+      <Item label="UV Bulb 2 Reminder Off" value="0"/>
+      <Item label="Reminder in 6 Months" value="6"/>
+      <Item label="Reminder in 12 Months" value="12"/>
+      <Item label="Reminder in 24 Months" value="24"/>
+    </Value>
+    <Value genre="config" index="39" label="Idle Brightness" max="5" min="0" size="1" type="byte" units="" value="0">
+      <Help>Idle screen brightness 0-5 (ISU 1401)</Help>
+    </Value>
+    <Value genre="config" index="40" label="Clock Format" max="1" min="0" size="1" type="list" units="" value="0">
+      <Help>Clock Format (ISU 1410)</Help>
+      <Item label="12 hour" value="0"/>
+      <Item label="24 hour" value="1"/>
+    </Value>
+    <Value genre="config" index="41" label="Daylight Saving" max="1" min="0" size="1" type="list" units="" value="1">
+      <Help>Daylight Saving (ISU 1415)</Help>
+      <Item label="Off" value="0"/>
+      <Item label="On" value="1"/>
+    </Value>
+    <Value genre="config" index="42" label="Temperature Offset" max="3" min="-3" size="1" type="list" units="" value="0">
+      <Help>Temperature Offset in Fahrenheit (ISU 1420)</Help>
+      <Item label="-3" value="-3"/>
+      <Item label="-2" value="-2"/>
+      <Item label="-1" value="-1"/>
+      <Item label="0" value="0"/>
+      <Item label="+1" value="1"/>
+      <Item label="+2" value="2"/>
+      <Item label="+3" value="3"/>
+    </Value>
+  </CommandClass>
+  <CommandClass id="133">
+    <Associations num_groups="1">
+      <Group index="1" label="Lifeline" max_associations="1"/>
+    </Associations>
+  </CommandClass>
+</Product>

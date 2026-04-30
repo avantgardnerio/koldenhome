@@ -14,7 +14,7 @@ declare -A STATES=(
 
 declare -A MODES=(
   [0]="Off" [1]="Heat" [2]="Cool" [3]="Auto"
-  [11]="EM Heat" [12]="Energy Cool"
+  [4]="Aux Heat" [11]="Energy Heat" [12]="Energy Cool"
 )
 
 printf "%-12s  %-8s  %-20s  %-8s  %-8s  %s\n" "TIME" "MODE" "STATE" "TEMP" "HEAT SP" "COOL SP"

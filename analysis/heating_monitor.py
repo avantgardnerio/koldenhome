@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Plot temperature data with dead band and HVAC duty cycle."""
 
+import bisect
 import matplotlib
 matplotlib.use('GTK3Agg')
 import psycopg2
@@ -39,6 +40,18 @@ cur.execute("""
 """)
 state_rows = cur.fetchall()
 
+# Thermostat mode (CC 64): 1=Heat(HP), 2=Cool, 3=Auto, 4=Aux(Furnace), 11=Energy Heat
+cur.execute("""
+    SELECT time, value::text::int
+    FROM events
+    WHERE node_id = 61
+      AND property = 'mode'
+      AND command_class = 64
+      AND time > NOW() - INTERVAL '7 days'
+    ORDER BY time
+""")
+tstat_mode_rows = cur.fetchall()
+
 # Fan mode (CC 68): 0=Auto Low, 6=Circulation — tracks when plugin enables circ fan
 cur.execute("""
     SELECT time, value::text::int
@@ -70,7 +83,15 @@ basement = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 59]
 outside = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 60]
 thermostat = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 61]
 states = [(r[0].astimezone(mtn), r[1]) for r in state_rows]
+tstat_modes = [(r[0].astimezone(mtn), r[1]) for r in tstat_mode_rows]
 fan_modes = [(r[0].astimezone(mtn), r[1]) for r in fan_mode_rows]
+
+def get_mode_at(t, tstat_modes):
+    if not tstat_modes:
+        return None
+    mode_times = [m[0] for m in tstat_modes]
+    idx = bisect.bisect_right(mode_times, t) - 1
+    return tstat_modes[idx][1] if idx >= 0 else None
 
 fig, ax = plt.subplots(figsize=(18, 7))
 
@@ -117,13 +138,17 @@ if has_duty_data:
         first_hour = times[0].replace(minute=0, second=0, microsecond=0)
         last_hour = times[-1].replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
 
-        heat_buckets = []
+        hp_heat_buckets = []
+        furnace_heat_buckets = []
+        energy_heat_buckets = []
         cool_buckets = []
         bucket_centers = []
         hour = first_hour
         while hour < last_hour:
             next_hour = hour + timedelta(hours=1)
-            heat_secs = 0.0
+            hp_heat_secs = 0.0
+            furnace_heat_secs = 0.0
+            energy_heat_secs = 0.0
             cool_secs = 0.0
 
             # Walk state transitions, accumulate time in this bucket
@@ -140,20 +165,36 @@ if has_duty_data:
 
                 duration = (seg_end - seg_start).total_seconds()
                 if state == 1:
-                    heat_secs += duration
+                    mode = get_mode_at(seg_start, tstat_modes)
+                    if mode == 4:
+                        furnace_heat_secs += duration
+                    elif mode == 11:
+                        energy_heat_secs += duration
+                    else:
+                        hp_heat_secs += duration
                 elif state == 2:
                     cool_secs += duration
 
             bucket_secs = (next_hour - hour).total_seconds()
-            heat_buckets.append(heat_secs / bucket_secs)
+            hp_heat_buckets.append(hp_heat_secs / bucket_secs)
+            furnace_heat_buckets.append(furnace_heat_secs / bucket_secs)
+            energy_heat_buckets.append(energy_heat_secs / bucket_secs)
             cool_buckets.append(cool_secs / bucket_secs)
             bucket_centers.append(hour + timedelta(minutes=30))
             hour = next_hour
 
         bar_width = timedelta(minutes=50)
-        if any(v > 0 for v in heat_buckets):
-            ax2.bar(bucket_centers, heat_buckets, width=bar_width, alpha=0.35,
-                    color='#e67e22', label='Heating %')
+        if any(v > 0 for v in hp_heat_buckets):
+            ax2.bar(bucket_centers, hp_heat_buckets, width=bar_width, alpha=0.35,
+                    color='#e67e22', label='HP Heating %')
+        if any(v > 0 for v in furnace_heat_buckets):
+            hp_bottom = [h for h in hp_heat_buckets]
+            ax2.bar(bucket_centers, furnace_heat_buckets, width=bar_width, alpha=0.35,
+                    color='#c0392b', label='Furnace %', bottom=hp_bottom)
+        if any(v > 0 for v in energy_heat_buckets):
+            hp_furnace_bottom = [h + f for h, f in zip(hp_heat_buckets, furnace_heat_buckets)]
+            ax2.bar(bucket_centers, energy_heat_buckets, width=bar_width, alpha=0.35,
+                    color='#8e44ad', label='Dual Heat %', bottom=hp_furnace_bottom)
         if any(v > 0 for v in cool_buckets):
             ax2.bar(bucket_centers, cool_buckets, width=bar_width, alpha=0.35,
                     color='#2980b9', label='Cooling %')
