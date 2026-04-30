@@ -257,6 +257,7 @@ if all_times:
     day = first_day - timedelta(days=1)  # start a day early to catch previous night
     last = last_day + timedelta(days=1)
     first_night = True
+    first_peak = True
     while day <= last:
         s = sun(fc.observer, date=day, tzinfo=mtn)
         s_next = sun(fc.observer, date=day + timedelta(days=1), tzinfo=mtn)
@@ -264,6 +265,17 @@ if all_times:
         ax.axvspan(s['sunset'], s_next['sunrise'], alpha=0.15, color='#888888',
                    label='Night' if first_night else None)
         first_night = False
+        # TOU peak shading: M-F 5-9pm (Oct-Apr), M-F 2-7pm (May-Sep)
+        if day.weekday() < 5:  # Mon-Fri
+            if day.month >= 5 and day.month <= 9:
+                peak_start = datetime(day.year, day.month, day.day, 14, tzinfo=mtn)
+                peak_end = datetime(day.year, day.month, day.day, 19, tzinfo=mtn)
+            else:
+                peak_start = datetime(day.year, day.month, day.day, 17, tzinfo=mtn)
+                peak_end = datetime(day.year, day.month, day.day, 21, tzinfo=mtn)
+            ax.axvspan(peak_start, peak_end, alpha=0.10, color='#e74c3c',
+                       label='TOU Peak' if first_peak else None)
+            first_peak = False
         if day > first_day:
             midnight = datetime(day.year, day.month, day.day, tzinfo=mtn)
             ax.axvline(x=midnight, color='white', linestyle='-', linewidth=0.8, alpha=0.4)
