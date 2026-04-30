@@ -88,21 +88,37 @@ export default async function hvacMode(manager, config) {
     // }
   };
 
+  const OUTDOOR_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
+
   const getOutdoorTemp = () => {
     if (!outdoor_sensor_id) return null;
     try {
       const node = manager.getDriver().controller.nodes.get(outdoor_sensor_id);
       if (!node) return null;
-      return node.getValue({
+      const valueId = {
         commandClass: CC_MULTILEVEL_SENSOR,
         property: "Air temperature",
-      });
+      };
+      const temp = node.getValue(valueId);
+      if (temp == null) return null;
+      const ts = node.getValueTimestamp(valueId);
+      if (ts != null && Date.now() - ts > OUTDOOR_MAX_AGE_MS) {
+        const ageMin = Math.round((Date.now() - ts) / 60000);
+        console.warn(`[hvac-mode] outdoor temp ${temp}°F is stale (${ageMin} min old), treating as unknown`);
+        return null;
+      }
+      return temp;
     } catch { return null; }
   };
 
   const pickHeatingMode = (currentMode) => {
     const outdoorTemp = getOutdoorTemp();
-    if (outdoorTemp == null) return MODES.HEAT;
+    if (outdoorTemp == null) {
+      if (currentMode !== MODES.AUX_HEAT) {
+        console.warn("[hvac-mode] outdoor temp unknown — defaulting to furnace (safe fallback)");
+      }
+      return MODES.AUX_HEAT;
+    }
 
     if (currentMode === MODES.AUX_HEAT && outdoorTemp > balance_point + balance_point_hysteresis) {
       console.log(`[hvac-mode] outdoor ${outdoorTemp}°F > ${balance_point + balance_point_hysteresis}°F — switching furnace → HP`);
