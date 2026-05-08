@@ -35,7 +35,7 @@ import cameraRoutes from "./routes/cameras.js";
 
 const PORT = process.env.PORT || 3000;
 const GIT_SHA = (() => { try { return execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim(); } catch { return "unknown"; } })();
-const SERIAL_PORT = process.env.SERIAL_PORT || "/dev/ttyUSB0";
+const SERIAL_PORT = process.env.SERIAL_PORT || "/dev/ttyACM0";
 
 // ─── Driver Manager ─────────────────────────────────────────────────────────
 

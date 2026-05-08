@@ -63,7 +63,7 @@ export default (manager) => {
    *             properties:
    *               strategy:
    *                 type: number
-   *                 description: "0=Default, 2=Insecure, 3=S0, 4=S2"
+   *                 description: "0=Default (auto S2/S0), 2=Insecure, 3=Security_S0, 4=Security_S2"
    *               pin:
    *                 type: string
    *                 description: "5-digit DSK PIN for S2 inclusion (printed on device)"

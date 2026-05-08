@@ -1,6 +1,6 @@
 import { getSunrise, getSunset } from "sunrise-sunset-js";
 
-const CC_IRRIGATION = 107;
+const CC_BINARY_SWITCH = 37;
 
 export default async function sprinkler(manager, config) {
   const { node_id, runs, location } = config;
@@ -18,19 +18,20 @@ export default async function sprinkler(manager, config) {
     if (!node) return;
     console.log(`[sprinkler] starting zone ${zone} for ${duration}min`);
     await node.setValue(
-      { commandClass: CC_IRRIGATION, property: zone, propertyKey: "duration" },
-      duration,
-    );
-    await node.setValue(
-      { commandClass: CC_IRRIGATION, property: zone, propertyKey: "startStop" },
+      { commandClass: CC_BINARY_SWITCH, property: "targetValue", endpoint: zone },
       true,
     );
+    await new Promise((r) => setTimeout(r, duration * 60 * 1000));
+    await node.setValue(
+      { commandClass: CC_BINARY_SWITCH, property: "targetValue", endpoint: zone },
+      false,
+    );
+    console.log(`[sprinkler] zone ${zone} off`);
   };
 
   const runSequence = async (zones) => {
     for (const { zone, duration } of zones) {
       await runZone(zone, duration);
-      await new Promise((r) => setTimeout(r, duration * 60 * 1000));
     }
     console.log("[sprinkler] run complete");
   };
