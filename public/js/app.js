@@ -8,6 +8,7 @@ import { Controller } from "./pages/controller.js";
 import { NodeDetail } from "./pages/node.js";
 import { Battery } from "./pages/battery.js";
 import { Camera } from "./pages/camera.js";
+import { Plots } from "./pages/plots.js";
 
 // PWA install prompt
 let deferredPrompt = null;
@@ -21,6 +22,7 @@ const routes = [
   { pattern: /^\/nodes\/(\d+)$/, component: NodeDetail, params: (m) => ({ id: m[1] }) },
   { pattern: /^\/battery$/, component: Battery },
   { pattern: /^\/cameras$/, component: Camera },
+  { pattern: /^\/plots$/, component: Plots },
   { pattern: /^\/controller$/, component: Controller },
   { pattern: /^\/$/, component: Dashboard },
 ];

@@ -21,7 +21,7 @@ cur = conn.cursor()
 cur.execute("""
     SELECT node_id, time, value::text::float
     FROM events
-    WHERE node_id IN (58, 59, 60, 61)
+    WHERE node_id IN (14, 15, 16, 6)
       AND property = 'Air temperature'
       AND time > NOW() - INTERVAL '7 days'
     ORDER BY time
@@ -32,7 +32,7 @@ temp_rows = cur.fetchall()
 cur.execute("""
     SELECT time, value::text::int
     FROM events
-    WHERE node_id = 61
+    WHERE node_id = 6
       AND property = 'state'
       AND command_class = 66
       AND time > NOW() - INTERVAL '7 days'
@@ -44,7 +44,7 @@ state_rows = cur.fetchall()
 cur.execute("""
     SELECT time, value::text::int
     FROM events
-    WHERE node_id = 61
+    WHERE node_id = 6
       AND property = 'mode'
       AND command_class = 64
       AND time > NOW() - INTERVAL '7 days'
@@ -56,7 +56,7 @@ tstat_mode_rows = cur.fetchall()
 cur.execute("""
     SELECT time, value::text::int
     FROM events
-    WHERE node_id = 61
+    WHERE node_id = 6
       AND property = 'mode'
       AND command_class = 68
       AND time > NOW() - INTERVAL '7 days'
@@ -78,10 +78,10 @@ cool_above = float(row[1]) if row else 74
 conn.close()
 
 # Split by node
-top = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 58]
-basement = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 59]
-outside = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 60]
-thermostat = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 61]
+top = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 14]
+basement = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 15]
+outside = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 16]
+thermostat = [(r[1].astimezone(mtn), r[2]) for r in temp_rows if r[0] == 6]
 states = [(r[0].astimezone(mtn), r[1]) for r in state_rows]
 tstat_modes = [(r[0].astimezone(mtn), r[1]) for r in tstat_mode_rows]
 fan_modes = [(r[0].astimezone(mtn), r[1]) for r in fan_mode_rows]

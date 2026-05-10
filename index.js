@@ -30,6 +30,7 @@ import dashboardRoutes from "./routes/dashboard.js";
 import pushRoutes from "./routes/push.js";
 import batteryRoutes from "./routes/battery.js";
 import cameraRoutes from "./routes/cameras.js";
+import plotRoutes from "./routes/plots.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -133,6 +134,7 @@ const startServer = async () => {
   app.use("/api/push", pushRoutes());
   app.use("/api/battery", batteryRoutes(manager));
   app.use("/api/cameras", cameraRoutes());
+  app.use("/api/plots", plotRoutes());
 
   // ─── Camera Stream Proxy (go2rtc) ─────────────────────────────────────
   // /cam/* → go2rtc on :8084, supports WebSocket upgrade for WebRTC/MSE.

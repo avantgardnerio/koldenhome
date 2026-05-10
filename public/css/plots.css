@@ -1,0 +1,47 @@
+.plots-page h1 {
+  margin: 1.5rem 0 0.5rem;
+}
+
+.plots-page h1:first-child {
+  margin-top: 0;
+}
+
+.plot-section {
+  margin-bottom: 2rem;
+}
+
+.plot-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.plot-controls button {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border, #444);
+  background: var(--surface, #1e1e1e);
+  color: var(--text, #eee);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.plot-controls button.active {
+  background: var(--primary, #3498db);
+  border-color: var(--primary, #3498db);
+  color: #fff;
+}
+
+.plot-canvas-wrap {
+  position: relative;
+  height: 400px;
+  background: var(--surface, #1e1e1e);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .plot-canvas-wrap {
+    height: 300px;
+  }
+}
