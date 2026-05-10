@@ -1,8 +1,52 @@
 import { Router } from "express";
+import { getSunrise, getSunset } from "sunrise-sunset-js";
 import { asyncHandler } from "../lib/helpers.js";
 import { getPlotData, getAllDevices, getEnabledPlugins } from "../lib/db.js";
 
 const router = Router();
+const LAT = 40.585, LON = -105.084;
+
+function computeBands(days) {
+  const now = new Date();
+  const start = new Date(now.getTime() - days * 86400000);
+  const nights = [];
+  const peaks = [];
+
+  // Walk day by day from start-1 to now+1
+  const d = new Date(start);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - 1);
+  const end = new Date(now);
+  end.setDate(end.getDate() + 1);
+
+  while (d <= end) {
+    const sunset = getSunset(LAT, LON, d);
+    const nextDay = new Date(d);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const nextSunrise = getSunrise(LAT, LON, nextDay);
+    nights.push({ start: sunset.toISOString(), end: nextSunrise.toISOString() });
+
+    // TOU peak: M-F only (0=Sun, 6=Sat)
+    const dow = d.getDay();
+    if (dow >= 1 && dow <= 5) {
+      const month = d.getMonth(); // 0-indexed
+      let peakStart, peakEnd;
+      if (month >= 4 && month <= 8) {
+        // May-Sep: 2-7pm
+        peakStart = new Date(d); peakStart.setHours(14, 0, 0, 0);
+        peakEnd = new Date(d); peakEnd.setHours(19, 0, 0, 0);
+      } else {
+        // Oct-Apr: 5-9pm
+        peakStart = new Date(d); peakStart.setHours(17, 0, 0, 0);
+        peakEnd = new Date(d); peakEnd.setHours(21, 0, 0, 0);
+      }
+      peaks.push({ start: peakStart.toISOString(), end: peakEnd.toISOString() });
+    }
+
+    d.setDate(d.getDate() + 1);
+  }
+  return { nights, peaks };
+}
 
 export default () => {
   /**
@@ -39,8 +83,11 @@ export default () => {
       ? { heatBelow: hvacPlugin.config.heat_below, coolAbove: hvacPlugin.config.cool_above }
       : {};
 
+    const bands = computeBands(days);
+
     res.json({
       thresholds,
+      bands,
       temps: temps.map((r) => ({
         nodeId: r.node_id,
         time: r.time,
@@ -86,7 +133,10 @@ export default () => {
     const devices = await getAllDevices();
     const deviceMap = Object.fromEntries(devices.map((d) => [d.node_id, d]));
 
+    const bands = computeBands(days);
+
     res.json({
+      bands,
       temps: temps.map((r) => ({
         nodeId: r.node_id,
         time: r.time,

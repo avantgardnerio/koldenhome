@@ -95,7 +95,7 @@ function buildHeaterBuckets(heaterData) {
   return buckets;
 }
 
-function createTempChart(canvas, series, dutyBuckets, title, thresholds = {}) {
+function createTempChart(canvas, series, dutyBuckets, title, thresholds = {}, bands = {}) {
   const datasets = series.map((s) => ({
     label: s.label,
     data: s.data.map((d) => ({ x: new Date(d.time), y: d.value })),
@@ -132,6 +132,7 @@ function createTempChart(canvas, series, dutyBuckets, title, thresholds = {}) {
     type: "line",
     data: { datasets },
     options: {
+      animation: false,
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: "nearest", intersect: false },
@@ -170,6 +171,26 @@ function createTempChart(canvas, series, dutyBuckets, title, thresholds = {}) {
                 label: { display: true, content: `Cool ${thresholds.coolAbove}°F`, position: "start", color: "#ccc", backgroundColor: "transparent", font: { size: 11 } },
               },
             } : {}),
+            ...(bands.nights || []).reduce((acc, n, i) => {
+              acc[`night${i}`] = {
+                type: "box",
+                xMin: n.start,
+                xMax: n.end,
+                backgroundColor: "rgba(136,136,136,0.12)",
+                borderWidth: 0,
+              };
+              return acc;
+            }, {}),
+            ...(bands.peaks || []).reduce((acc, p, i) => {
+              acc[`peak${i}`] = {
+                type: "box",
+                xMin: p.start,
+                xMax: p.end,
+                backgroundColor: "rgba(231,76,60,0.08)",
+                borderWidth: 0,
+              };
+              return acc;
+            }, {}),
           },
         },
       },
@@ -208,8 +229,8 @@ function PlotCanvas({ loader, builder, title }) {
     try {
       const data = await loader(days);
       if (chartRef.current) chartRef.current.destroy();
-      const { series, dutyBuckets, thresholds } = builder(data);
-      chartRef.current = createTempChart(canvasRef.current, series, dutyBuckets, title, thresholds);
+      const { series, dutyBuckets, thresholds, bands } = builder(data);
+      chartRef.current = createTempChart(canvasRef.current, series, dutyBuckets, title, thresholds, bands);
       setError(null);
     } catch (e) {
       setError(e.message);
@@ -246,7 +267,7 @@ export function Plots() {
     const colorMap = { 14: COLORS.red, 15: COLORS.blue, 6: COLORS.green, 16: COLORS.gray };
     const series = Object.entries(byNode).map(([id, s]) => ({ ...s, color: colorMap[id] || "#fff" }));
     const dutyBuckets = buildDutyBuckets(data.states, data.modes, null, null);
-    return { series, dutyBuckets, thresholds: data.thresholds || {} };
+    return { series, dutyBuckets, thresholds: data.thresholds || {}, bands: data.bands || {} };
   }, []);
 
   const coopBuilder = useCallback((data) => {
@@ -258,7 +279,7 @@ export function Plots() {
     const colorMap = { 2: COLORS.red, 16: COLORS.gray };
     const series = Object.entries(byNode).map(([id, s]) => ({ ...s, color: colorMap[id] || "#fff" }));
     const dutyBuckets = buildHeaterBuckets(data.heater);
-    return { series, dutyBuckets };
+    return { series, dutyBuckets, bands: data.bands || {} };
   }, []);
 
   return html`
