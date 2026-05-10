@@ -1,9 +1,10 @@
 import { getSunrise, getSunset } from "sunrise-sunset-js";
 
 const CC_BINARY_SWITCH = 37;
+const OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast";
 
 export default async function sprinkler(manager, config) {
-  const { node_id, runs, location } = config;
+  const { node_id, runs, location, rain_threshold_mm = 2.5 } = config;
   const [lat, lon] = location;
   const timers = [];
 
@@ -29,7 +30,26 @@ export default async function sprinkler(manager, config) {
     console.log(`[sprinkler] zone ${zone} off`);
   };
 
+  const checkRain = async () => {
+    try {
+      const url = `${OPEN_METEO_URL}?latitude=${lat}&longitude=${lon}&hourly=precipitation&past_days=1&forecast_days=1&timezone=auto`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const total = data.hourly.precipitation.reduce((sum, v) => sum + v, 0);
+      console.log(`[sprinkler] rain check: ${total.toFixed(1)}mm in ±24h (threshold: ${rain_threshold_mm}mm)`);
+      return total;
+    } catch (e) {
+      console.error("[sprinkler] rain check failed, running anyway:", e.message);
+      return 0;
+    }
+  };
+
   const runSequence = async (zones) => {
+    const rain = await checkRain();
+    if (rain >= rain_threshold_mm) {
+      console.log(`[sprinkler] skipping run — ${rain.toFixed(1)}mm rain exceeds threshold`);
+      return;
+    }
     for (const { zone, duration } of zones) {
       await runZone(zone, duration);
     }
