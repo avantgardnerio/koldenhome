@@ -66,6 +66,34 @@ function buildDutyBuckets(states, modes, startTime, endTime) {
   return buckets;
 }
 
+function buildFanBuckets(fanModes) {
+  if (fanModes.length < 2) return null;
+  const buckets = [];
+  let hour = new Date(fanModes[0].time);
+  hour.setMinutes(0, 0, 0);
+  const end = new Date(fanModes[fanModes.length - 1].time);
+  end.setMinutes(0, 0, 0);
+  end.setHours(end.getHours() + 1);
+
+  while (hour < end) {
+    const next = new Date(hour);
+    next.setHours(next.getHours() + 1);
+    let circSecs = 0;
+    for (let i = 0; i < fanModes.length; i++) {
+      const tStart = new Date(fanModes[i].time);
+      const tEnd = i + 1 < fanModes.length ? new Date(fanModes[i + 1].time) : next;
+      const segStart = tStart < hour ? hour : tStart;
+      const segEnd = tEnd > next ? next : tEnd;
+      if (segStart >= segEnd) continue;
+      if (fanModes[i].value === 6) circSecs += (segEnd - segStart) / 1000;
+    }
+    const total = (next - hour) / 1000;
+    buckets.push({ time: new Date(hour.getTime() + 30 * 60000), fan: circSecs / total });
+    hour = next;
+  }
+  return buckets;
+}
+
 function buildHeaterBuckets(heaterData) {
   if (heaterData.length < 2) return null;
   const buckets = [];
@@ -113,6 +141,7 @@ function createTempChart(canvas, series, dutyBuckets, title, thresholds = {}, ba
       { key: "furnace", label: "Furnace", color: COLORS.darkRed },
       { key: "cool", label: "Cooling", color: COLORS.coolBlue },
       { key: "duty", label: "Heater", color: COLORS.orange },
+      { key: "fan", label: "Circ Fan", color: COLORS.fanGreen },
     ]) {
       if (dutyBuckets[0]?.[key] !== undefined) {
         datasets.push({
@@ -268,7 +297,17 @@ export function Plots() {
     const colorMap = { 14: COLORS.red, 15: COLORS.blue, 6: COLORS.green, 16: COLORS.gray };
     const series = Object.entries(byNode).map(([id, s]) => ({ ...s, color: colorMap[id] || "#fff" }));
     const dutyBuckets = buildDutyBuckets(data.states, data.modes, null, null);
-    return { series, dutyBuckets, thresholds: data.thresholds || {}, bands: data.bands || {} };
+    const fanBuckets = buildFanBuckets(data.fanModes || []);
+    if (fanBuckets && dutyBuckets) {
+      for (let i = 0; i < dutyBuckets.length; i++) dutyBuckets[i].fan = 0;
+      for (const fb of fanBuckets) {
+        const match = dutyBuckets.find((b) => b.time.getTime() === fb.time.getTime());
+        if (match) match.fan = fb.fan;
+        else dutyBuckets.push({ ...fb, hp: 0, furnace: 0, cool: 0 });
+      }
+    }
+    const finalBuckets = dutyBuckets || (fanBuckets ? fanBuckets.map((b) => ({ ...b, hp: 0, furnace: 0, cool: 0 })) : null);
+    return { series, dutyBuckets: finalBuckets, thresholds: data.thresholds || {}, bands: data.bands || {} };
   }, []);
 
   const coopBuilder = useCallback((data) => {
