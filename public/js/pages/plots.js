@@ -136,6 +136,7 @@ function createTempChart(canvas, series, dutyBuckets, title, thresholds = {}, ba
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: "nearest", intersect: false },
+      events: "ontouchstart" in window ? [] : ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
       plugins: {
         legend: { position: "top", labels: { color: "#ccc", usePointStyle: true, boxWidth: 8 } },
         title: { display: true, text: title, color: "#eee", font: { size: 16 } },
