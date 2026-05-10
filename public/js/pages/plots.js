@@ -2,9 +2,10 @@ import { html } from "htm/preact";
 import { useState, useEffect, useRef, useCallback } from "preact/hooks";
 import { api } from "../api.js";
 import { Chart, TimeScale, LinearScale, LineController, LineElement, PointElement, BarController, BarElement, Legend, Tooltip, Filler } from "chart.js";
+import annotationPlugin from "chartjs-plugin-annotation";
 import "chartjs-adapter-date-fns";
 
-Chart.register(TimeScale, LinearScale, LineController, LineElement, PointElement, BarController, BarElement, Legend, Tooltip, Filler);
+Chart.register(TimeScale, LinearScale, LineController, LineElement, PointElement, BarController, BarElement, Legend, Tooltip, Filler, annotationPlugin);
 
 const COLORS = {
   red: "#e74c3c",
@@ -94,7 +95,7 @@ function buildHeaterBuckets(heaterData) {
   return buckets;
 }
 
-function createTempChart(canvas, series, dutyBuckets, title) {
+function createTempChart(canvas, series, dutyBuckets, title, thresholds = {}) {
   const datasets = series.map((s) => ({
     label: s.label,
     data: s.data.map((d) => ({ x: new Date(d.time), y: d.value })),
@@ -145,6 +146,32 @@ function createTempChart(canvas, series, dutyBuckets, title) {
             },
           },
         },
+        annotation: {
+          annotations: {
+            ...(thresholds.heatBelow != null ? {
+              heatLine: {
+                type: "line",
+                yMin: thresholds.heatBelow,
+                yMax: thresholds.heatBelow,
+                borderColor: COLORS.red + "99",
+                borderWidth: 1.5,
+                borderDash: [6, 4],
+                label: { display: true, content: `Heat ${thresholds.heatBelow}°F`, position: "start", color: "#ccc", backgroundColor: "transparent", font: { size: 11 } },
+              },
+            } : {}),
+            ...(thresholds.coolAbove != null ? {
+              coolLine: {
+                type: "line",
+                yMin: thresholds.coolAbove,
+                yMax: thresholds.coolAbove,
+                borderColor: COLORS.blue + "99",
+                borderWidth: 1.5,
+                borderDash: [6, 4],
+                label: { display: true, content: `Cool ${thresholds.coolAbove}°F`, position: "start", color: "#ccc", backgroundColor: "transparent", font: { size: 11 } },
+              },
+            } : {}),
+          },
+        },
       },
       scales: {
         x: {
@@ -181,8 +208,8 @@ function PlotCanvas({ loader, builder, title }) {
     try {
       const data = await loader(days);
       if (chartRef.current) chartRef.current.destroy();
-      const { series, dutyBuckets } = builder(data);
-      chartRef.current = createTempChart(canvasRef.current, series, dutyBuckets, title);
+      const { series, dutyBuckets, thresholds } = builder(data);
+      chartRef.current = createTempChart(canvasRef.current, series, dutyBuckets, title, thresholds);
       setError(null);
     } catch (e) {
       setError(e.message);
@@ -219,7 +246,7 @@ export function Plots() {
     const colorMap = { 14: COLORS.red, 15: COLORS.blue, 6: COLORS.green, 16: COLORS.gray };
     const series = Object.entries(byNode).map(([id, s]) => ({ ...s, color: colorMap[id] || "#fff" }));
     const dutyBuckets = buildDutyBuckets(data.states, data.modes, null, null);
-    return { series, dutyBuckets };
+    return { series, dutyBuckets, thresholds: data.thresholds || {} };
   }, []);
 
   const coopBuilder = useCallback((data) => {

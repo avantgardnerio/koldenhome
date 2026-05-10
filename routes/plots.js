@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/helpers.js";
-import { getPlotData, getAllDevices } from "../lib/db.js";
+import { getPlotData, getAllDevices, getEnabledPlugins } from "../lib/db.js";
 
 const router = Router();
 
@@ -33,7 +33,14 @@ export default () => {
     const devices = await getAllDevices();
     const deviceMap = Object.fromEntries(devices.map((d) => [d.node_id, d]));
 
+    const plugins = await getEnabledPlugins();
+    const hvacPlugin = plugins.find((p) => p.type === "hvac-mode");
+    const thresholds = hvacPlugin
+      ? { heatBelow: hvacPlugin.config.heat_below, coolAbove: hvacPlugin.config.cool_above }
+      : {};
+
     res.json({
+      thresholds,
       temps: temps.map((r) => ({
         nodeId: r.node_id,
         time: r.time,
