@@ -85,7 +85,7 @@ function buildFanBuckets(fanModes) {
       const segStart = tStart < hour ? hour : tStart;
       const segEnd = tEnd > next ? next : tEnd;
       if (segStart >= segEnd) continue;
-      if (fanModes[i].value === 6) circSecs += (segEnd - segStart) / 1000;
+      if (fanModes[i].value !== 0) circSecs += (segEnd - segStart) / 1000;
     }
     const total = (next - hour) / 1000;
     buckets.push({ time: new Date(hour.getTime() + 30 * 60000), fan: circSecs / total });

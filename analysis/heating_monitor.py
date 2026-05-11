@@ -52,7 +52,7 @@ cur.execute("""
 """)
 tstat_mode_rows = cur.fetchall()
 
-# Fan mode (CC 68): 0=Auto Low, 6=Circulation — tracks when plugin enables circ fan
+# Fan mode (CC 68): 0=Auto Low, 1=Low (continuous), 6=Circulation
 cur.execute("""
     SELECT time, value::text::int
     FROM events
@@ -224,7 +224,7 @@ if has_duty_data:
                     if seg_start >= seg_end:
                         continue
 
-                    if fm_vals[i] == 6:  # Circulation
+                    if fm_vals[i] != 0:  # any non-Auto fan mode
                         circ_secs += (seg_end - seg_start).total_seconds()
 
                 bucket_secs = (next_hour - hour).total_seconds()

@@ -3,7 +3,7 @@ const CC_THERMOSTAT_MODE = 0x40;
 const CC_MULTILEVEL_SENSOR = 0x31;
 const CC_THERMOSTAT_FAN_MODE = 0x44;
 
-const FAN = { AUTO_LOW: 0, CIRCULATION: 6 };
+const FAN = { AUTO_LOW: 0, LOW: 1, CIRCULATION: 6 };
 
 export default async function hvacMode(manager, config) {
   const {
@@ -77,10 +77,10 @@ export default async function hvacMode(manager, config) {
     const spread = Math.max(...temps) - Math.min(...temps);
     const fanMode = getCurrentFanMode();
 
-    if (spread > circ_fan_on && fanMode !== FAN.CIRCULATION) {
-      console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F > ${circ_fan_on}°F — enabling Circulation`);
-      await setFanMode(FAN.CIRCULATION);
-    } else if (spread < circ_fan_off && fanMode === FAN.CIRCULATION) {
+    if (spread > circ_fan_on && fanMode !== FAN.LOW) {
+      console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F > ${circ_fan_on}°F — enabling continuous fan`);
+      await setFanMode(FAN.LOW);
+    } else if (spread < circ_fan_off && fanMode === FAN.LOW) {
       console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F < ${circ_fan_off}°F — returning to Auto Low`);
       await setFanMode(FAN.AUTO_LOW);
     }
