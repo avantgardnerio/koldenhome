@@ -71,20 +71,25 @@ export default async function hvacMode(manager, config) {
     );
   };
 
-  const evaluateZoneSpread = async () => {
-    if (zoneTemps.size < 2) return;
-    const temps = [...zoneTemps.values()];
-    const spread = Math.max(...temps) - Math.min(...temps);
-    const fanMode = getCurrentFanMode();
-
-    if (spread > circ_fan_on && fanMode !== FAN.LOW) {
-      console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F > ${circ_fan_on}°F — enabling continuous fan`);
-      await setFanMode(FAN.LOW);
-    } else if (spread < circ_fan_off && fanMode === FAN.LOW) {
-      console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F < ${circ_fan_off}°F — returning to Auto Low`);
-      await setFanMode(FAN.AUTO_LOW);
-    }
-  };
+  // DISABLED 2026-05-11: Continuous fan experiment failed.
+  // Both Circ (mode 6, 2026-05-10) and Low (mode 1, 2026-05-11) were unable
+  // to reduce zone spread in this split-level. With flat outdoor temps (82°F),
+  // 5hrs of continuous Low saw spread grow from 10.6°F to 11.5°F.
+  // Solar/envelope gain dominates; blower can't overcome stratification.
+  // const evaluateZoneSpread = async () => {
+  //   if (zoneTemps.size < 2) return;
+  //   const temps = [...zoneTemps.values()];
+  //   const spread = Math.max(...temps) - Math.min(...temps);
+  //   const fanMode = getCurrentFanMode();
+  //
+  //   if (spread > circ_fan_on && fanMode !== FAN.LOW) {
+  //     console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F > ${circ_fan_on}°F — enabling continuous fan`);
+  //     await setFanMode(FAN.LOW);
+  //   } else if (spread < circ_fan_off && fanMode === FAN.LOW) {
+  //     console.log(`[hvac-mode] zone spread ${spread.toFixed(1)}°F < ${circ_fan_off}°F — returning to Auto Low`);
+  //     await setFanMode(FAN.AUTO_LOW);
+  //   }
+  // };
 
   const OUTDOOR_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
@@ -179,24 +184,24 @@ export default async function hvacMode(manager, config) {
     console.error(`[hvac-mode] init sync failed: ${err.message}`);
   }
 
-  // Sync zone temps on startup
-  for (const id of zone_sensors) {
-    try {
-      const node = manager.getDriver().controller.nodes.get(id);
-      if (!node) continue;
-      const temp = node.getValue({
-        commandClass: CC_MULTILEVEL_SENSOR,
-        property: "Air temperature",
-      });
-      if (temp != null) {
-        zoneTemps.set(id, temp);
-        console.log(`[hvac-mode] init: zone sensor ${id} reads ${temp}°F`);
-      }
-    } catch (err) {
-      console.error(`[hvac-mode] init zone sensor ${id} failed: ${err.message}`);
-    }
-  }
-  await evaluateZoneSpread();
+  // DISABLED 2026-05-11: zone spread fan control experiment failed (see evaluateZoneSpread)
+  // for (const id of zone_sensors) {
+  //   try {
+  //     const node = manager.getDriver().controller.nodes.get(id);
+  //     if (!node) continue;
+  //     const temp = node.getValue({
+  //       commandClass: CC_MULTILEVEL_SENSOR,
+  //       property: "Air temperature",
+  //     });
+  //     if (temp != null) {
+  //       zoneTemps.set(id, temp);
+  //       console.log(`[hvac-mode] init: zone sensor ${id} reads ${temp}°F`);
+  //     }
+  //   } catch (err) {
+  //     console.error(`[hvac-mode] init zone sensor ${id} failed: ${err.message}`);
+  //   }
+  // }
+  // await evaluateZoneSpread();
 
   return {
     async valueUpdated(node, args) {
@@ -219,10 +224,11 @@ export default async function hvacMode(manager, config) {
         await evaluate(indoorTemp);
       }
 
-      if (zone_sensors.includes(node.id)) {
-        zoneTemps.set(node.id, temp);
-        await evaluateZoneSpread();
-      }
+      // DISABLED 2026-05-11: zone spread fan control experiment failed
+      // if (zone_sensors.includes(node.id)) {
+      //   zoneTemps.set(node.id, temp);
+      //   await evaluateZoneSpread();
+      // }
     },
   };
 }
