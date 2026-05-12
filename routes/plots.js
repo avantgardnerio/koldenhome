@@ -12,7 +12,7 @@ function computeBands(days) {
   const nights = [];
   const peaks = [];
 
-  // Walk day by day from start-1 to now+1
+  // Walk day by day from start-1 to now+1 (to catch partial bands at edges)
   const d = new Date(start);
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - 1);
@@ -24,7 +24,12 @@ function computeBands(days) {
     const nextDay = new Date(d);
     nextDay.setDate(nextDay.getDate() + 1);
     const nextSunrise = getSunrise(LAT, LON, nextDay);
-    nights.push({ start: sunset.toISOString(), end: nextSunrise.toISOString() });
+    // Clamp to data window
+    const nStart = sunset < start ? start : sunset;
+    const nEnd = nextSunrise > now ? now : nextSunrise;
+    if (nStart < nEnd) {
+      nights.push({ start: nStart.toISOString(), end: nEnd.toISOString() });
+    }
 
     // TOU peak: M-F only (0=Sun, 6=Sat)
     const dow = d.getDay();
@@ -40,7 +45,11 @@ function computeBands(days) {
         peakStart = new Date(d); peakStart.setHours(17, 0, 0, 0);
         peakEnd = new Date(d); peakEnd.setHours(21, 0, 0, 0);
       }
-      peaks.push({ start: peakStart.toISOString(), end: peakEnd.toISOString() });
+      const pStart = peakStart < start ? start : peakStart;
+      const pEnd = peakEnd > now ? now : peakEnd;
+      if (pStart < pEnd) {
+        peaks.push({ start: pStart.toISOString(), end: pEnd.toISOString() });
+      }
     }
 
     d.setDate(d.getDate() + 1);
