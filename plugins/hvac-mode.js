@@ -1,13 +1,14 @@
-// Thermostat Mode CC = 64, Multilevel Sensor CC = 49, Fan Mode CC = 68
+// Thermostat Mode CC = 64, Multilevel Sensor CC = 49, Setpoint CC = 67, Fan Mode CC = 68
 const CC_THERMOSTAT_MODE = 0x40;
 const CC_MULTILEVEL_SENSOR = 0x31;
+const CC_THERMOSTAT_SETPOINT = 0x43;
 const CC_THERMOSTAT_FAN_MODE = 0x44;
 
 const FAN = { AUTO_LOW: 0, LOW: 1, CIRCULATION: 6 };
 
 export default async function hvacMode(manager, config) {
   const {
-    sensor_node_id, thermostat_node_id, heat_below, cool_above,
+    sensor_node_id, thermostat_node_id,
     zone_sensors = [], circ_fan_on, circ_fan_off,
     outdoor_sensor_id, balance_point = 40, balance_point_hysteresis = 3,
   } = config;
@@ -69,6 +70,28 @@ export default async function hvacMode(manager, config) {
       { commandClass: CC_THERMOSTAT_FAN_MODE, property: "mode" },
       mode,
     );
+  };
+
+  // Read heating/cooling setpoints directly from the thermostat's cached values
+  const getSetpoints = () => {
+    try {
+      const node = manager.getDriver().controller.nodes.get(thermostat_node_id);
+      if (!node) return { heating: null, cooling: null };
+      const heating = node.getValue({
+        commandClass: CC_THERMOSTAT_SETPOINT,
+        property: "setpoint",
+        propertyKey: 1, // Heating
+      });
+      const cooling = node.getValue({
+        commandClass: CC_THERMOSTAT_SETPOINT,
+        property: "setpoint",
+        propertyKey: 2, // Cooling
+      });
+      return { heating, cooling };
+    } catch (err) {
+      console.error(`[hvac-mode] failed to read setpoints: ${err.message}`);
+      return { heating: null, cooling: null };
+    }
   };
 
   // DISABLED 2026-05-11: Continuous fan experiment failed.
@@ -147,15 +170,17 @@ export default async function hvacMode(manager, config) {
     // Never turn the system on from off — respect manual off (e.g. windows open)
     if (currentMode === MODES.OFF) return;
 
-    if (temp < heat_below) {
+    const { heating: heatBelow, cooling: coolAbove } = getSetpoints();
+
+    if (heatBelow != null && temp < heatBelow) {
       const desiredMode = pickHeatingMode(currentMode);
       if (currentMode !== desiredMode) {
         const label = desiredMode === MODES.AUX_HEAT ? "Aux Heat (furnace)" : "Heat (HP)";
-        console.log(`[hvac-mode] ${temp}°F < ${heat_below}°F — switching to ${label} (outdoor: ${getOutdoorTemp() ?? "unknown"}°F)`);
+        console.log(`[hvac-mode] ${temp}°F < ${heatBelow}°F setpoint — switching to ${label} (outdoor: ${getOutdoorTemp() ?? "unknown"}°F)`);
         await setMode(desiredMode);
       }
-    } else if (temp > cool_above && currentMode !== MODES.COOL) {
-      console.log(`[hvac-mode] ${temp}°F > ${cool_above}°F — switching to Cool`);
+    } else if (coolAbove != null && temp > coolAbove && currentMode !== MODES.COOL) {
+      console.log(`[hvac-mode] ${temp}°F > ${coolAbove}°F setpoint — switching to Cool`);
       await setMode(MODES.COOL);
     }
   };
@@ -165,6 +190,10 @@ export default async function hvacMode(manager, config) {
     const outdoorTemp = getOutdoorTemp();
     console.log(`[hvac-mode] init: outdoor sensor ${outdoor_sensor_id} reads ${outdoorTemp ?? "unknown"}°F (balance point: ${balance_point}°F ±${balance_point_hysteresis}°F)`);
   }
+
+  // Log setpoints on startup
+  const { heating: initHeat, cooling: initCool } = getSetpoints();
+  console.log(`[hvac-mode] init: setpoints — heat below ${initHeat ?? "unknown"}°F, cool above ${initCool ?? "unknown"}°F`);
 
   // Sync mode on startup from current sensor reading
   try {
