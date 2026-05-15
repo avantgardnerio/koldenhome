@@ -3,8 +3,10 @@ import { getSunrise, getSunset } from "sunrise-sunset-js";
 const CC_BINARY_SWITCH = 37;
 const OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast";
 
+const CC_SENSOR_MULTILEVEL = 49;
+
 export default async function sprinkler(manager, config) {
-  const { node_id, runs, location, rain_threshold_mm = 2.5 } = config;
+  const { node_id, runs, location, rain_threshold_mm = 0, freeze_node_id } = config;
   const [lat, lon] = location;
   const timers = [];
 
@@ -39,14 +41,40 @@ export default async function sprinkler(manager, config) {
       console.log(`[sprinkler] rain check: ${total.toFixed(1)}mm in ±24h (threshold: ${rain_threshold_mm}mm)`);
       return total;
     } catch (e) {
-      console.error("[sprinkler] rain check failed, running anyway:", e.message);
-      return 0;
+      console.error("[sprinkler] rain check failed, skipping run:", e.message);
+      return Infinity;
+    }
+  };
+
+  const checkFreeze = () => {
+    if (!freeze_node_id) return false;
+    try {
+      const node = manager.getDriver().controller.nodes.get(freeze_node_id);
+      if (!node) {
+        console.error(`[sprinkler] freeze sensor node ${freeze_node_id} not found, skipping run`);
+        return true;
+      }
+      const temp = node.getValue({ commandClass: CC_SENSOR_MULTILEVEL, property: "Air temperature" });
+      if (temp == null) {
+        console.error("[sprinkler] freeze sensor has no temp value, skipping run");
+        return true;
+      }
+      console.log(`[sprinkler] outdoor temp: ${temp}°F`);
+      if (temp <= 37) {
+        console.log(`[sprinkler] skipping run — ${temp}°F is near or below freezing`);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error("[sprinkler] freeze check failed, skipping run:", e.message);
+      return true;
     }
   };
 
   const runSequence = async (zones) => {
+    if (checkFreeze()) return;
     const rain = await checkRain();
-    if (rain >= rain_threshold_mm) {
+    if (rain > rain_threshold_mm) {
       console.log(`[sprinkler] skipping run — ${rain.toFixed(1)}mm rain exceeds threshold`);
       return;
     }
