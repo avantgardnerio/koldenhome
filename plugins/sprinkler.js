@@ -71,7 +71,16 @@ export default async function sprinkler(manager, config) {
     }
   };
 
-  const runSequence = async (zones) => {
+  const DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+  const runSequence = async (zones, days) => {
+    if (days) {
+      const today = DAY_NAMES[new Date().getDay()];
+      if (!days.includes(today)) {
+        console.log(`[sprinkler] skipping run — ${today} not in ${days.join(", ")}`);
+        return;
+      }
+    }
     if (checkFreeze()) return;
     const rain = await checkRain();
     if (rain > rain_threshold_mm) {
@@ -104,7 +113,7 @@ export default async function sprinkler(manager, config) {
     console.log(`[sprinkler] next "${run.start}" run in ${Math.round(delay / 60000)}min`);
 
     const id = setTimeout(() => {
-      runSequence(run.zones);
+      runSequence(run.zones, run.days);
       scheduleRun(run); // reschedule for next day
     }, delay);
     timers.push(id);
