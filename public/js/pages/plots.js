@@ -142,6 +142,7 @@ function createTempChart(canvas, series, dutyBuckets, title, thresholds = {}, ba
       { key: "cool", label: "Cooling", color: COLORS.coolBlue },
       { key: "duty", label: "Heater", color: COLORS.orange },
       { key: "fan", label: "Circ Fan", color: COLORS.fanGreen },
+      { key: "atticFan", label: "Attic Fan", color: COLORS.purple },
     ]) {
       if (dutyBuckets[0]?.[key] !== undefined) {
         datasets.push({
@@ -306,7 +307,19 @@ export function Plots() {
         else dutyBuckets.push({ ...fb, hp: 0, furnace: 0, cool: 0 });
       }
     }
-    const finalBuckets = dutyBuckets || (fanBuckets ? fanBuckets.map((b) => ({ ...b, hp: 0, furnace: 0, cool: 0 })) : null);
+    const atticFanBuckets = buildHeaterBuckets(data.atticFan || []);
+    if (atticFanBuckets && dutyBuckets) {
+      for (let i = 0; i < dutyBuckets.length; i++) dutyBuckets[i].atticFan = 0;
+      for (const ab of atticFanBuckets) {
+        const match = dutyBuckets.find((b) => b.time.getTime() === ab.time.getTime());
+        if (match) match.atticFan = ab.duty;
+        else dutyBuckets.push({ ...ab, hp: 0, furnace: 0, cool: 0, fan: 0, atticFan: ab.duty });
+      }
+    }
+    let finalBuckets = dutyBuckets || (fanBuckets ? fanBuckets.map((b) => ({ ...b, hp: 0, furnace: 0, cool: 0 })) : null);
+    if (!finalBuckets && atticFanBuckets) {
+      finalBuckets = atticFanBuckets.map((b) => ({ time: b.time, hp: 0, furnace: 0, cool: 0, fan: 0, atticFan: b.duty }));
+    }
     return { series, dutyBuckets: finalBuckets, thresholds: data.thresholds || {}, bands: data.bands || {} };
   }, []);
 

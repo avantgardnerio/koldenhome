@@ -83,6 +83,9 @@ export default () => {
     // Thermostat operating state (CC 66) and mode (CC 64) and fan mode (CC 68)
     const stateData = await getPlotData([6], ["state", "mode"], days);
 
+    // Attic fan (19) binary switch
+    const atticFanData = await getPlotData([19], ["currentValue"], days);
+
     const devices = await getAllDevices();
     const deviceMap = Object.fromEntries(devices.map((d) => [d.node_id, d]));
 
@@ -112,6 +115,7 @@ export default () => {
       fanModes: stateData
         .filter((r) => r.command_class === 68)
         .map((r) => ({ time: r.time, value: r.value })),
+      atticFan: atticFanData.map((r) => ({ time: r.time, value: r.value })),
     });
   }));
 
