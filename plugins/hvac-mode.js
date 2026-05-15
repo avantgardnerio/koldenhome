@@ -144,6 +144,9 @@ export default async function hvacMode(manager, config) {
 
     const currentMode = getCurrentMode();
 
+    // Never turn the system on from off — respect manual off (e.g. windows open)
+    if (currentMode === MODES.OFF) return;
+
     if (temp < heat_below) {
       const desiredMode = pickHeatingMode(currentMode);
       if (currentMode !== desiredMode) {
