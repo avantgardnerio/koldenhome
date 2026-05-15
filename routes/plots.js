@@ -57,7 +57,7 @@ function computeBands(days) {
   return { nights, peaks };
 }
 
-export default () => {
+export default (manager) => {
   /**
    * @openapi
    * /plots/hvac:
@@ -89,11 +89,16 @@ export default () => {
     const devices = await getAllDevices();
     const deviceMap = Object.fromEntries(devices.map((d) => [d.node_id, d]));
 
-    const plugins = await getEnabledPlugins();
-    const hvacPlugin = plugins.find((p) => p.type === "hvac-mode");
-    const thresholds = hvacPlugin
-      ? { heatBelow: hvacPlugin.config.heat_below, coolAbove: hvacPlugin.config.cool_above }
-      : {};
+    const thresholds = {};
+    try {
+      const node = manager.getDriver().controller.nodes.get(6);
+      if (node) {
+        const heat = node.getValue({ commandClass: 0x43, property: "setpoint", propertyKey: 1 });
+        const cool = node.getValue({ commandClass: 0x43, property: "setpoint", propertyKey: 2 });
+        if (heat != null) thresholds.heatBelow = heat;
+        if (cool != null) thresholds.coolAbove = cool;
+      }
+    } catch {};
 
     const bands = computeBands(days);
 

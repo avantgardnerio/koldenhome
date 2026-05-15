@@ -134,7 +134,7 @@ const startServer = async () => {
   app.use("/api/push", pushRoutes());
   app.use("/api/battery", batteryRoutes(manager));
   app.use("/api/cameras", cameraRoutes());
-  app.use("/api/plots", plotRoutes());
+  app.use("/api/plots", plotRoutes(manager));
 
   // ─── Camera Stream Proxy (go2rtc) ─────────────────────────────────────
   // /cam/* → go2rtc on :8084, supports WebSocket upgrade for WebRTC/MSE.
