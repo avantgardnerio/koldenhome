@@ -18,6 +18,7 @@ const COLORS = {
   coolBlue: "#2980b9",
   fanGreen: "#27ae60",
   teal: "#1abc9c",
+  gold: "#f1c40f",
 };
 
 function buildDutyBuckets(states, modes, startTime, endTime) {
@@ -297,7 +298,7 @@ export function Plots() {
       if (!byNode[t.nodeId]) byNode[t.nodeId] = { label: t.name, data: [] };
       byNode[t.nodeId].data.push(t);
     }
-    const colorMap = { 14: COLORS.red, 15: COLORS.blue, 6: COLORS.green, 16: COLORS.gray };
+    const colorMap = { 14: COLORS.red, 15: COLORS.blue, 6: COLORS.green, 16: COLORS.gray, 10: COLORS.gold };
     const series = Object.entries(byNode).map(([id, s]) => ({ ...s, color: colorMap[id] || "#fff" }));
     const dutyBuckets = buildDutyBuckets(data.states, data.modes, null, null);
     const fanBuckets = buildFanBuckets(data.fanModes || []);
