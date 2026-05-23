@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/helpers.js";
 import { requireLocal } from "../lib/auth.js";
+import { getAllDevices } from "../lib/db.js";
 
 const router = Router();
 
@@ -48,6 +49,71 @@ export default (manager) => {
       nodeCount: ctrl.nodes.size,
     });
   });
+
+  /**
+   * @openapi
+   * /controller/topology:
+   *   get:
+   *     tags: [Controller]
+   *     summary: Per-node mesh routing info (last working route, RSSI, status)
+   *     responses:
+   *       200:
+   *         description: Array of node topology entries
+   */
+  router.get("/topology", asyncHandler(async (_req, res) => {
+    const ctrl = manager.getDriver().controller;
+    const devices = await getAllDevices();
+    const nameMap = Object.fromEntries(devices.map((d) => [d.node_id, d.name]));
+
+    const STATUS_TXT = { 0: "Unknown", 1: "Asleep", 2: "Awake", 3: "Dead", 4: "Alive" };
+    const RATE_TXT = { 1: "9.6k", 2: "40k", 3: "100k" };
+
+    const nodes = [];
+    for (const node of ctrl.nodes.values()) {
+      const stats = node.statistics || {};
+      const lwr = stats.lwr || null;
+      const nlwr = stats.nlwr || null;
+      let neighbors = [];
+      try {
+        // getNodeNeighbors reads the controller's cached neighbor list — fast
+        // and works even for sleeping nodes (no OTA query).
+        neighbors = await ctrl.getNodeNeighbors(node.id);
+      } catch (e) {
+        neighbors = [];
+      }
+      nodes.push({
+        nodeId: node.id,
+        name: nameMap[node.id] || null,
+        isController: node.id === ctrl.ownNodeId,
+        status: node.status,
+        statusText: STATUS_TXT[node.status] ?? String(node.status),
+        isListening: node.isListening,
+        isFrequentListening: node.isFrequentListening,
+        isRouting: node.isRouting,
+        interviewStage: node.interviewStage,
+        lastSeen: stats.lastSeen ?? null,
+        rtt: stats.rtt ?? null,
+        rssi: stats.rssi ?? null,
+        neighbors,
+        lwr: lwr ? {
+          repeaters: lwr.repeaters ?? [],
+          rssi: lwr.rssi ?? null,
+          repeaterRSSI: lwr.repeaterRSSI ?? [],
+          protocolDataRate: lwr.protocolDataRate ?? null,
+          protocolDataRateText: RATE_TXT[lwr.protocolDataRate] ?? null,
+        } : null,
+        nlwr: nlwr ? {
+          repeaters: nlwr.repeaters ?? [],
+          rssi: nlwr.rssi ?? null,
+          repeaterRSSI: nlwr.repeaterRSSI ?? [],
+          protocolDataRate: nlwr.protocolDataRate ?? null,
+          protocolDataRateText: RATE_TXT[nlwr.protocolDataRate] ?? null,
+        } : null,
+      });
+    }
+    nodes.sort((a, b) => a.nodeId - b.nodeId);
+    res.json({ nodes });
+  }));
 
   /**
    * @openapi

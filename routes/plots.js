@@ -76,8 +76,8 @@ export default (manager) => {
    */
   router.get("/hvac", asyncHandler(async (req, res) => {
     const days = Math.min(Number(req.query.days) || 7, 30);
-    // Brent's Office (14), Rachel's Office (15), Back Porch (16), Kitchen thermostat (6), Attic (10)
-    const tempNodes = [14, 15, 16, 6, 10];
+    // Brent's Office (14), Rachel's Office (15), Back Porch (16), Kitchen thermostat (6), Attic (24)
+    const tempNodes = [14, 15, 16, 6, 24];
     const temps = await getPlotData(tempNodes, ["Air temperature"], days);
 
     // Thermostat operating state (CC 66) and mode (CC 64) and fan mode (CC 68)

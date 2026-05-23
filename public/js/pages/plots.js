@@ -298,7 +298,7 @@ export function Plots() {
       if (!byNode[t.nodeId]) byNode[t.nodeId] = { label: t.name, data: [] };
       byNode[t.nodeId].data.push(t);
     }
-    const colorMap = { 14: COLORS.red, 15: COLORS.blue, 6: COLORS.green, 16: COLORS.gray, 10: COLORS.gold };
+    const colorMap = { 14: COLORS.red, 15: COLORS.blue, 6: COLORS.green, 16: COLORS.gray, 24: COLORS.gold };
     const series = Object.entries(byNode).map(([id, s]) => ({ ...s, color: colorMap[id] || "#fff" }));
     const dutyBuckets = buildDutyBuckets(data.states, data.modes, null, null);
     const fanBuckets = buildFanBuckets(data.fanModes || []);

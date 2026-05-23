@@ -53,7 +53,7 @@ N_OFFICE  = 14   # Brent's Office Temp
 N_RACHEL  = 15   # Rachel's Office Temp (basement)
 N_KITCHEN = 6    # Kitchen thermostat (main floor)
 N_OUTSIDE = 16   # Back Porch (outdoor reference)
-N_ATTIC   = 10   # Attic Temp (Aeotec MultiSensor 6, deployed 2026-05-23)
+N_ATTIC   = 24   # Attic Temp (Zooz ZSE40 4-in-1, deployed 2026-05-23)
 
 # Z-Wave devices that constitute "external input"
 N_WHF       = 19   # Whole-house fan
