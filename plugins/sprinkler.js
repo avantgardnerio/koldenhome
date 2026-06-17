@@ -20,15 +20,23 @@ export default async function sprinkler(manager, config) {
     const node = getNode();
     if (!node) return;
     console.log(`[sprinkler] starting zone ${zone} for ${duration}min`);
-    await node.setValue(
-      { commandClass: CC_BINARY_SWITCH, property: "targetValue", endpoint: zone },
-      true,
-    );
+    try {
+      await node.setValue(
+        { commandClass: CC_BINARY_SWITCH, property: "targetValue", endpoint: zone },
+        true,
+      );
+    } catch (e) {
+      console.error(`[sprinkler] zone ${zone} on failed:`, e.message);
+    }
     await new Promise((r) => setTimeout(r, duration * 60 * 1000));
-    await node.setValue(
-      { commandClass: CC_BINARY_SWITCH, property: "targetValue", endpoint: zone },
-      false,
-    );
+    try {
+      await node.setValue(
+        { commandClass: CC_BINARY_SWITCH, property: "targetValue", endpoint: zone },
+        false,
+      );
+    } catch (e) {
+      console.error(`[sprinkler] zone ${zone} off failed:`, e.message);
+    }
     console.log(`[sprinkler] zone ${zone} off`);
   };
 
@@ -108,7 +116,9 @@ export default async function sprinkler(manager, config) {
     const now = new Date();
     let target = resolveStart(run.start);
     let delay = target.getTime() - now.getTime();
-    if (delay < 0) delay += 24 * 60 * 60 * 1000; // tomorrow
+    // Treat small positive delays as "we just fired" — sun drifts seconds/day,
+    // so the recursive reschedule sees today's event still seconds in the future.
+    if (delay < 60_000) delay += 24 * 60 * 60 * 1000;
 
     console.log(`[sprinkler] next "${run.start}" run in ${Math.round(delay / 60000)}min`);
 

@@ -24,17 +24,23 @@ export default async function coop(manager, config) {
     const node = getNode();
     if (!node) return;
     console.log(`[coop] ${what} ${on ? "ON" : "OFF"}`);
-    await node.setValue(
-      { commandClass: CC_BINARY_SWITCH, property: "targetValue", endpoint },
-      on,
-    );
+    try {
+      await node.setValue(
+        { commandClass: CC_BINARY_SWITCH, property: "targetValue", endpoint },
+        on,
+      );
+    } catch (e) {
+      console.error(`[coop] ${what} ${on ? "ON" : "OFF"} failed:`, e.message);
+    }
   };
 
   const schedule = (label, getNextTime, action) => {
     const now = new Date();
     let target = getNextTime(now);
     let delay = target.getTime() - now.getTime();
-    if (delay < 0) {
+    // Treat small positive delays as "we just fired" — sun drifts seconds/day,
+    // so the recursive reschedule sees today's event still seconds in the future.
+    if (delay < 60_000) {
       const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       delay = getNextTime(tomorrow).getTime() - now.getTime();
     }
