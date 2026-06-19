@@ -166,13 +166,11 @@ export default async function hvacMode(manager, config) {
     }
 
     const currentMode = getCurrentMode();
-
-    // Never turn the system on from off — respect manual off (e.g. windows open)
-    if (currentMode === MODES.OFF) return;
-
     const { heating: heatBelow, cooling: coolAbove } = getSetpoints();
 
     if (heatBelow != null && temp < heatBelow) {
+      // Don't auto-heat from OFF — respect manual off (windows open in spring/fall)
+      if (currentMode === MODES.OFF) return;
       const desiredMode = pickHeatingMode(currentMode);
       if (currentMode !== desiredMode) {
         const label = desiredMode === MODES.AUX_HEAT ? "Aux Heat (furnace)" : "Heat (HP)";
@@ -180,7 +178,8 @@ export default async function hvacMode(manager, config) {
         await setMode(desiredMode);
       }
     } else if (coolAbove != null && temp > coolAbove && currentMode !== MODES.COOL) {
-      console.log(`[hvac-mode] ${temp}°F > ${coolAbove}°F setpoint — switching to Cool`);
+      // Auto-cool from any mode including OFF — WHF leaves us in OFF after summer overnight cooling
+      console.log(`[hvac-mode] ${temp}°F > ${coolAbove}°F setpoint — switching to Cool (from mode ${currentMode})`);
       await setMode(MODES.COOL);
     }
   };

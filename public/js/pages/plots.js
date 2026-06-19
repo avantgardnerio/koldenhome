@@ -20,6 +20,7 @@ const COLORS = {
   teal: "#1abc9c",
   gold: "#f1c40f",
   brown: "#a0522d",
+  pink: "#e84393",
 };
 
 function buildDutyBuckets(states, modes, startTime, endTime) {
@@ -145,8 +146,9 @@ function createTempChart(canvas, series, dutyBuckets, title, thresholds = {}, ba
       { key: "cool", label: "Cooling", color: COLORS.coolBlue },
       { key: "duty", label: "Heater", color: COLORS.orange },
       { key: "fan", label: "Circ Fan", color: COLORS.fanGreen },
-      { key: "atticFan", label: "Attic Fan", color: COLORS.purple },
+      { key: "atticFan", label: "WHF", color: COLORS.purple },
       { key: "brentFan", label: "Brent's Fan", color: COLORS.teal },
+      { key: "gableFan", label: "Gable Fan", color: COLORS.pink },
     ]) {
       if (dutyBuckets[0]?.[key] !== undefined) {
         datasets.push({
@@ -329,9 +331,18 @@ export function Plots() {
         else dutyBuckets.push({ ...bf, hp: 0, furnace: 0, cool: 0, fan: 0, atticFan: 0, brentFan: bf.duty });
       }
     }
+    const gableFanBuckets = buildHeaterBuckets(data.gableFan || []);
+    if (gableFanBuckets && dutyBuckets) {
+      for (let i = 0; i < dutyBuckets.length; i++) dutyBuckets[i].gableFan = 0;
+      for (const gf of gableFanBuckets) {
+        const match = dutyBuckets.find((b) => b.time.getTime() === gf.time.getTime());
+        if (match) match.gableFan = gf.duty;
+        else dutyBuckets.push({ ...gf, hp: 0, furnace: 0, cool: 0, fan: 0, atticFan: 0, brentFan: 0, gableFan: gf.duty });
+      }
+    }
     let finalBuckets = dutyBuckets || (fanBuckets ? fanBuckets.map((b) => ({ ...b, hp: 0, furnace: 0, cool: 0 })) : null);
     if (!finalBuckets && atticFanBuckets) {
-      finalBuckets = atticFanBuckets.map((b) => ({ time: b.time, hp: 0, furnace: 0, cool: 0, fan: 0, atticFan: b.duty, brentFan: 0 }));
+      finalBuckets = atticFanBuckets.map((b) => ({ time: b.time, hp: 0, furnace: 0, cool: 0, fan: 0, atticFan: b.duty, brentFan: 0, gableFan: 0 }));
     }
     return { series, dutyBuckets: finalBuckets, thresholds: data.thresholds || {}, bands: data.bands || {} };
   }, []);

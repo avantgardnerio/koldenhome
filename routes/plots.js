@@ -83,9 +83,10 @@ export default (manager) => {
     // Thermostat operating state (CC 66) and mode (CC 64) and fan mode (CC 68)
     const stateData = await getPlotData([6], ["state", "mode"], days);
 
-    // Attic fan (19) and Brent's fan (21) binary switch
+    // WHF (19), Brent's fan (21), Gable fan (26) binary switches
     const atticFanData = await getPlotData([19], ["currentValue"], days);
     const brentFanData = await getPlotData([21], ["currentValue"], days);
+    const gableFanData = await getPlotData([26], ["currentValue"], days);
 
     const devices = await getAllDevices();
     const deviceMap = Object.fromEntries(devices.map((d) => [d.node_id, d]));
@@ -123,6 +124,7 @@ export default (manager) => {
         .map((r) => ({ time: r.time, value: r.value })),
       atticFan: atticFanData.map((r) => ({ time: r.time, value: r.value })),
       brentFan: brentFanData.map((r) => ({ time: r.time, value: r.value })),
+      gableFan: gableFanData.map((r) => ({ time: r.time, value: r.value })),
     });
   }));
 
