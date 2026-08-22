@@ -1,5 +1,6 @@
 node_modules/
 cache/
+backups/
 .idea/
 .venv/
 analysis/output/*

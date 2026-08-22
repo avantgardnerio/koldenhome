@@ -178,7 +178,8 @@ export default async function hvacMode(manager, config) {
         await setMode(desiredMode);
       }
     } else if (coolAbove != null && temp > coolAbove && currentMode !== MODES.COOL) {
-      // Auto-cool from any mode including OFF — WHF leaves us in OFF after summer overnight cooling
+      // Don't auto-cool from OFF — respect manual off (WHF running, windows open)
+      if (currentMode === MODES.OFF) return;
       console.log(`[hvac-mode] ${temp}°F > ${coolAbove}°F setpoint — switching to Cool (from mode ${currentMode})`);
       await setMode(MODES.COOL);
     }
