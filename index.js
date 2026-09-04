@@ -144,7 +144,10 @@ const startServer = async () => {
     changeOrigin: true,
     ws: true,
     pathRewrite: { "^/cam": "" },
-    logLevel: "warn",
+    // `logLevel` was removed in http-proxy-middleware v3 — it had been silently
+    // ignored, so proxy failures were invisible. `logger` is the replacement;
+    // drop info and keep warn/error to match the original intent.
+    logger: { info: () => {}, warn: console.warn, error: console.error },
   });
   app.use("/cam", requireAuth, camProxy);
 
