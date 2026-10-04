@@ -1,4 +1,5 @@
 import { getSunrise, getSunset } from "sunrise-sunset-js";
+import { notify } from "../lib/notify.js";
 
 const CC_BINARY_SWITCH = 37;
 
@@ -10,6 +11,7 @@ export default async function coop(manager, config) {
     location,
     light_on_min_before_sunset = 30,
     light_off_min_after_sunset = 30,
+    door_close_min_after_sunset = 20,
   } = config;
   const [lat, lon] = location;
   const timers = [];
@@ -22,16 +24,26 @@ export default async function coop(manager, config) {
 
   const setRelay = async (endpoint, on, what) => {
     const node = getNode();
-    if (!node) return;
+    if (!node) return false;
     console.log(`[coop] ${what} ${on ? "ON" : "OFF"}`);
     try {
       await node.setValue(
         { commandClass: CC_BINARY_SWITCH, property: "targetValue", endpoint },
         on,
       );
+      return true;
     } catch (e) {
       console.error(`[coop] ${what} ${on ? "ON" : "OFF"} failed:`, e.message);
+      return false;
     }
+  };
+
+  // Relay is level-based: OFF = door down. JVR anti-pinch still reverses on a chicken.
+  const closeDoor = async () => {
+    const ok = await setRelay(door_endpoint, false, "door");
+    await notify(ok
+      ? { title: "Coop door closed", body: "Check for chickens locked out." }
+      : { title: "Coop door FAILED to close", body: "Door may still be open — check the coop." });
   };
 
   const schedule = (label, getNextTime, action) => {
@@ -56,6 +68,12 @@ export default async function coop(manager, config) {
     "sunrise door-open",
     (d) => getSunrise(lat, lon, d),
     () => setRelay(door_endpoint, true, "door"),
+  );
+
+  schedule(
+    "door-close (post-sunset)",
+    (d) => new Date(getSunset(lat, lon, d).getTime() + door_close_min_after_sunset * 60 * 1000),
+    closeDoor,
   );
 
   schedule(
