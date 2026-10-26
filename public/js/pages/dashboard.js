@@ -3,6 +3,18 @@ import { useState, useEffect, useCallback } from "preact/hooks";
 import { api } from "../api.js";
 import { ValueControl } from "../components/value-control.js";
 
+// Items are grouped by sort_order decade: 20-29 is "Group 20", and so on.
+function groupItems(items) {
+  const groups = [];
+  for (const item of items) {
+    const decade = Math.floor(item.sort_order / 10);
+    const last = groups[groups.length - 1];
+    if (last && last.decade === decade) last.items.push(item);
+    else groups.push({ decade, items: [item] });
+  }
+  return groups;
+}
+
 export function Dashboard() {
   const [items, setItems] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -127,28 +139,31 @@ export function Dashboard() {
         </div>
       `}
 
-      ${items && items.length > 0 && html`
-        <div class="dashboard-grid">
-          ${items.map((item) => html`
-            <div class="dashboard-card" key=${item.id}>
-              <div class="card-label">${item.label}</div>
-              <div class="card-control">
-                ${item.metadata
-                  ? html`<${ValueControl}
-                      value=${item.value}
-                      metadata=${item.metadata}
-                      onSet=${(v) => setValue(item, v)}
-                    />`
-                  : html`<span style="color:var(--text-muted)">Node ${item.node_id} unavailable</span>`
-                }
+      ${items && items.length > 0 && groupItems(items).map((group) => html`
+        <details class="dashboard-group" open key=${group.decade}>
+          <summary>Group ${group.decade * 10}</summary>
+          <div class="dashboard-grid">
+            ${group.items.map((item) => html`
+              <div class="dashboard-card" key=${item.id}>
+                <div class="card-label">${item.label}</div>
+                <div class="card-control">
+                  ${item.metadata
+                    ? html`<${ValueControl}
+                        value=${item.value}
+                        metadata=${item.metadata}
+                        onSet=${(v) => setValue(item, v)}
+                      />`
+                    : html`<span style="color:var(--text-muted)">Node ${item.node_id} unavailable</span>`
+                  }
+                </div>
+                ${editing && html`
+                  <button class="card-remove" onClick=${() => removeItem(item.id)}>Remove</button>
+                `}
               </div>
-              ${editing && html`
-                <button class="card-remove" onClick=${() => removeItem(item.id)}>Remove</button>
-              `}
-            </div>
-          `)}
-        </div>
-      `}
+            `)}
+          </div>
+        </details>
+      `)}
 
       ${editing && html`
         <div class="dashboard-add">
