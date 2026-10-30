@@ -15,10 +15,31 @@ function groupItems(items) {
   return groups;
 }
 
+// Collapsed groups are remembered per device. Storage can be unavailable (private
+// browsing, cleared site data), in which case every group simply starts open.
+const COLLAPSED_KEY = "dashboard.collapsedGroups";
+
+function loadCollapsed() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY)) || []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveCollapsed(collapsed) {
+  try {
+    localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...collapsed]));
+  } catch {
+    // Not persisted; the in-memory state still works for this visit.
+  }
+}
+
 export function Dashboard() {
   const [items, setItems] = useState(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState(null);
+  const [collapsed, setCollapsed] = useState(loadCollapsed);
 
   // Add-item form state
   const [nodes, setNodes] = useState(null);
@@ -52,6 +73,15 @@ export function Dashboard() {
     } catch (e) {
       setError(e.message);
     }
+  }
+
+  function onToggleGroup(decade, open) {
+    if (open !== collapsed.has(decade)) return;
+    const next = new Set(collapsed);
+    if (open) next.delete(decade);
+    else next.add(decade);
+    setCollapsed(next);
+    saveCollapsed(next);
   }
 
   async function removeItem(id) {
@@ -140,7 +170,12 @@ export function Dashboard() {
       `}
 
       ${items && items.length > 0 && groupItems(items).map((group) => html`
-        <details class="dashboard-group" open key=${group.decade}>
+        <details
+          class="dashboard-group"
+          key=${group.decade}
+          open=${!collapsed.has(group.decade)}
+          onToggle=${(e) => onToggleGroup(group.decade, e.currentTarget.open)}
+        >
           <summary>Group ${group.decade * 10}</summary>
           <div class="dashboard-grid">
             ${group.items.map((item) => html`
