@@ -1,3 +1,4 @@
+import https from "https";
 import { getSunrise, getSunset } from "sunrise-sunset-js";
 
 const CC_BINARY_SWITCH = 37;
@@ -43,8 +44,21 @@ export default async function sprinkler(manager, config) {
   const checkRain = async () => {
     try {
       const url = `${OPEN_METEO_URL}?latitude=${lat}&longitude=${lon}&hourly=precipitation&past_days=1&forecast_days=1&timezone=auto`;
-      const res = await fetch(url);
-      const data = await res.json();
+      // https, not fetch: Node's fetch parses with WebAssembly, which --jitless disables
+      const data = await new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+          if (res.statusCode !== 200) {
+            res.resume();
+            return reject(new Error(`HTTP ${res.statusCode}`));
+          }
+          let body = "";
+          res.setEncoding("utf8");
+          res.on("data", (chunk) => (body += chunk));
+          res.on("end", () => {
+            try { resolve(JSON.parse(body)); } catch (e) { reject(e); }
+          });
+        }).on("error", reject);
+      });
       const total = data.hourly.precipitation.reduce((sum, v) => sum + v, 0);
       console.log(`[sprinkler] rain check: ${total.toFixed(1)}mm in ±24h (threshold: ${rain_threshold_mm}mm)`);
       return total;
