@@ -11,7 +11,7 @@ import { dirname, join } from "path";
 import { execSync } from "child_process";
 import { createDriverManager } from "./lib/driver-manager.js";
 import { runMigrations, pool } from "./lib/db.js";
-import { loadAuthConfig, requireAuth, requireLocal } from "./lib/auth.js";
+import { loadAuthConfig, requireAuth, requireLocal, isAuthorized } from "./lib/auth.js";
 import { createRateLimiter } from "./lib/rate-limit.js";
 import { initPush } from "./lib/notify.js";
 
@@ -70,7 +70,8 @@ const startServer = async () => {
   // ─── Session Middleware ────────────────────────────────────────────────
 
   const PgStore = connectPgSimple(session);
-  app.use(session({
+  // Kept as a const so WebSocket upgrades (which bypass Express) can load the session too
+  const sessionMiddleware = session({
     store: new PgStore({ pool, tableName: "sessions" }),
     secret: authConfig.session.secret,
     resave: false,
@@ -81,7 +82,8 @@ const startServer = async () => {
       sameSite: "lax",
       secure: "auto",
     },
-  }));
+  });
+  app.use(sessionMiddleware);
 
   // ─── Swagger ───────────────────────────────────────────────────────────
 
@@ -139,10 +141,12 @@ const startServer = async () => {
   // ─── Camera Stream Proxy (go2rtc) ─────────────────────────────────────
   // /cam/* → go2rtc on :8084, supports WebSocket upgrade for WebRTC/MSE.
   // Auth is enforced: requireAuth (localhost passthrough or valid session).
+  // ws must stay false: with ws: true the middleware subscribes its own, unauthenticated
+  // 'upgrade' listener on the first /cam request. Upgrades are authed in server.on("upgrade").
   const camProxy = createProxyMiddleware({
     target: "http://127.0.0.1:8084",
     changeOrigin: true,
-    ws: true,
+    ws: false,
     pathRewrite: { "^/cam": "" },
     // `logLevel` was removed in http-proxy-middleware v3 — it had been silently
     // ignored, so proxy failures were invisible. `logger` is the replacement;
@@ -173,9 +177,18 @@ const startServer = async () => {
     console.log(`Swagger UI at http://localhost:${PORT}/docs`);
     console.log(`OpenAPI spec at http://localhost:${PORT}/openapi.json`);
   });
-  // Forward WebSocket upgrades for /cam/* to go2rtc
+  // Forward WebSocket upgrades for /cam/* to go2rtc. Upgrades never pass through Express
+  // middleware, so requireAuth doesn't run — load the session and check auth here.
   server.on("upgrade", (req, socket, head) => {
-    if (req.url?.startsWith("/cam")) camProxy.upgrade(req, socket, head);
+    if (!req.url?.startsWith("/cam")) return socket.destroy();
+    sessionMiddleware(req, {}, async () => {
+      try {
+        if (await isAuthorized(req)) return camProxy.upgrade(req, socket, head);
+      } catch (e) {
+        console.error("[cam] upgrade auth failed:", e.message);
+      }
+      socket.end("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
+    });
   });
 };
 
