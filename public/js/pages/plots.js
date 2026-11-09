@@ -98,30 +98,34 @@ function buildFanBuckets(fanModes) {
   return buckets;
 }
 
+// Buckets run through now: the last known state holds until the present, and the
+// current hour's duty is measured against the time elapsed so far.
 function buildHeaterBuckets(heaterData) {
-  if (heaterData.length < 2) return null;
+  if (!heaterData.length) return null;
   const buckets = [];
   let hour = new Date(heaterData[0].time);
   hour.setMinutes(0, 0, 0);
-  const end = new Date(heaterData[heaterData.length - 1].time);
+  const now = new Date();
+  const end = new Date(now);
   end.setMinutes(0, 0, 0);
   end.setHours(end.getHours() + 1);
 
   while (hour < end) {
     const next = new Date(hour);
     next.setHours(next.getHours() + 1);
+    const bucketEnd = next > now ? now : next;
     let onSecs = 0;
     for (let i = 0; i < heaterData.length; i++) {
       const val = heaterData[i].value;
       const tStart = new Date(heaterData[i].time);
-      const tEnd = i + 1 < heaterData.length ? new Date(heaterData[i + 1].time) : next;
+      const tEnd = i + 1 < heaterData.length ? new Date(heaterData[i + 1].time) : bucketEnd;
       const segStart = tStart < hour ? hour : tStart;
-      const segEnd = tEnd > next ? next : tEnd;
+      const segEnd = tEnd > bucketEnd ? bucketEnd : tEnd;
       if (segStart >= segEnd) continue;
       if (val) onSecs += (segEnd - segStart) / 1000;
     }
-    const total = (next - hour) / 1000;
-    buckets.push({ time: new Date(hour.getTime() + 30 * 60000), duty: onSecs / total });
+    const total = (bucketEnd - hour) / 1000;
+    if (total > 0) buckets.push({ time: new Date(hour.getTime() + 30 * 60000), duty: onSecs / total });
     hour = next;
   }
   return buckets;
