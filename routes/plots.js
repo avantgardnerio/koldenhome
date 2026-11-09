@@ -149,8 +149,11 @@ export default (manager) => {
     // Coop Temp (2), Back Porch / outside (16)
     const temps = await getPlotData([2, 16], ["Air temperature"], days);
 
-    // Coop Heater (13) binary switch state
-    const heater = await getPlotData([13], ["currentValue"], days);
+    // Heater relay comes from the coop plugin config (node_id + heater_endpoint); no config, no heater series
+    const coop = (await getEnabledPlugins()).find((p) => p.type === "coop");
+    const heater = coop?.config.heater_endpoint != null
+      ? await getPlotData([coop.config.node_id], ["currentValue"], days, coop.config.heater_endpoint)
+      : [];
 
     const devices = await getAllDevices();
     const deviceMap = Object.fromEntries(devices.map((d) => [d.node_id, d]));
